@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' https: data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'" />
+    <title>Video URL Library</title>
+    <link rel="icon" type="image/png" href="../images/icon.png" />
+    <link rel="stylesheet" href="../styles/styles.css" />
+  </head>
+  <body class="app-shell">
+    <div id="lockBackdrop" class="lock-backdrop hidden" aria-hidden="true">
+      <div class="lock-modal" role="dialog" aria-modal="true" aria-labelledby="lockTitle">
+        <h2 id="lockTitle" class="lock-title">Enter PIN</h2>
+        <p class="lock-hint">This library is protected. Enter your PIN to continue.</p>
+        <input
+          type="password"
+          id="lockInput"
+          class="input lock-input"
+          placeholder="PIN"
+          autocomplete="off"
+          autocapitalize="off"
+          spellcheck="false"
+        />
+        <p id="lockError" class="modal-error hidden"></p>
+        <button type="button" id="lockSubmit" class="btn primary lock-submit">Unlock</button>
+      </div>
+    </div>
+
+    <header class="toolbar">
+      <h1 class="title">Video URL Library</h1>
+      <div class="toolbar-actions">
+        <label class="field">
+          <span class="field-label">Per page</span>
+          <select id="limitSelect" aria-label="Items per page">
+            <option value="8">8</option>
+            <option value="12">12</option>
+            <option value="16" selected>16</option>
+            <option value="24">24</option>
+            <option value="32">32</option>
+            <option value="48">48</option>
+          </select>
+        </label>
+        <label class="field">
+          <span class="field-label">Grid</span>
+          <select id="gridSelect" aria-label="Columns per row">
+            <option value="3">3</option>
+            <option value="4" selected>4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+          </select>
+        </label>
+        <button type="button" id="btnRandom" class="btn ghost" title="Shuffle the library into a random order" disabled>Random</button>
+        <button type="button" id="btnAdd" class="btn primary">Add URL</button>
+      </div>
+    </header>
+
+    <main class="main">
+      <div id="emptyState" class="empty hidden" role="status">
+        <p>No URLs yet. Click <strong>Add URL</strong> to save your first link.</p>
+      </div>
+      <div id="grid" class="card-grid" style="--cols: 4"></div>
+      <nav id="pager" class="pager hidden" aria-label="Pagination">
+        <button type="button" id="btnPrev" class="btn ghost">Previous</button>
+        <span id="pageInfo" class="page-info"></span>
+        <button type="button" id="btnNext" class="btn ghost">Next</button>
+      </nav>
+    </main>
+
+    <footer class="app-footer" role="contentinfo">
+      <p class="footer-line">
+        © <span id="footerYear"></span> Video URL Library. Developed by
+        <a href="https://www.linkedin.com/company/mrk-solution" class="footer-link" data-external>MRK Solution</a>
+      </p>
+    </footer>
+
+    <div id="pinSettingsBackdrop" class="modal-backdrop pin-settings-backdrop hidden" aria-hidden="true">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="pinSettingsTitle">
+        <h2 id="pinSettingsTitle" class="modal-title">PIN settings</h2>
+        <div id="pinPanelSet" class="pin-panel hidden">
+          <p class="modal-hint">Create a PIN (4–64 characters). You will need it every time you open the app.</p>
+          <label class="field pin-field">
+            <span class="field-label">New PIN</span>
+            <input type="password" id="pinSetNew" class="input" autocomplete="new-password" />
+          </label>
+          <label class="field pin-field">
+            <span class="field-label">Confirm PIN</span>
+            <input type="password" id="pinSetConfirm" class="input" autocomplete="new-password" />
+          </label>
+          <p id="pinSetError" class="modal-error hidden"></p>
+          <div class="modal-actions">
+            <button type="button" id="pinSetCancel" class="btn ghost">Cancel</button>
+            <button type="button" id="pinSetSave" class="btn primary">Set PIN</button>
+          </div>
+        </div>
+        <div id="pinPanelManage" class="pin-panel hidden">
+          <p class="modal-hint">Change your PIN or remove protection.</p>
+          <label class="field pin-field">
+            <span class="field-label">Current PIN</span>
+            <input type="password" id="pinManageCurrent" class="input" autocomplete="off" />
+          </label>
+          <label class="field pin-field">
+            <span class="field-label">New PIN</span>
+            <input type="password" id="pinManageNew" class="input" autocomplete="new-password" />
+          </label>
+          <label class="field pin-field">
+            <span class="field-label">Confirm new PIN</span>
+            <input type="password" id="pinManageConfirm" class="input" autocomplete="new-password" />
+          </label>
+          <p id="pinManageError" class="modal-error hidden"></p>
+          <div class="modal-actions pin-manage-actions">
+            <button type="button" id="pinChangeBtn" class="btn primary">Change PIN</button>
+            <button type="button" id="pinRemoveBtn" class="btn danger-outline">Remove PIN</button>
+          </div>
+          <div class="modal-actions">
+            <button type="button" id="pinManageClose" class="btn ghost">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="modalBackdrop" class="modal-backdrop hidden" aria-hidden="true">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <h2 id="modalTitle" class="modal-title">Add video URL</h2>
+        <p class="modal-hint">Paste a link from YouTube, or any supported site.</p>
+        <input type="url" id="urlInput" class="input" placeholder="https://..." autocomplete="off" />
+        <p id="modalError" class="modal-error hidden"></p>
+        <div class="modal-actions">
+          <button type="button" id="modalCancel" class="btn ghost">Cancel</button>
+          <button type="button" id="modalSave" class="btn primary">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="../src/app.js"></script>
+  </body>
+</html>

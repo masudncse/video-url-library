@@ -1,6 +1,8 @@
+.eslintcache
 node_modules/
 dist/
 out/
+/Video URL Library/
 *.log
 *.pfx
 *.p12

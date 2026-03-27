@@ -1,3 +1,6 @@
+const aboutYear = document.getElementById('aboutFooterYear');
+if (aboutYear) aboutYear.textContent = String(new Date().getFullYear());
+
 document.querySelectorAll('a[data-external]').forEach((a) => {
   a.addEventListener('click', (e) => {
     e.preventDefault();

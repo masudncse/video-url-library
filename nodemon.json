@@ -1,0 +1,7 @@
+{
+  "watch": ["src", "views", "styles"],
+  "ext": "js,html,css",
+  "ignore": ["node_modules", "dist", "storage", "screenshot"],
+  "delay": 400,
+  "exec": "electron ."
+}

@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' https: data:; style-src 'self' 'unsafe-inline'; script-src 'self'" />
     <title>About — Video URL Library</title>
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="icon" type="image/png" href="../images/icon.png" />
+    <link rel="stylesheet" href="../styles/styles.css" />
   </head>
   <body class="about-body">
     <div class="about-shell">
@@ -42,8 +43,12 @@
       </section>
       <footer class="about-footer">
         <button type="button" id="aboutClose" class="btn primary about-close">Close</button>
+        <p class="about-copyright">
+          © <span id="aboutFooterYear"></span> Video URL Library. Developed by
+          <a href="https://www.linkedin.com/company/mrk-solution" class="about-link" data-external>MRK Solution</a>
+        </p>
       </footer>
     </div>
-    <script src="about.js"></script>
+    <script src="../src/about.js"></script>
   </body>
 </html>
