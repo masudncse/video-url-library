@@ -65,11 +65,12 @@
         <label class="field">
           <span class="field-label">Order by</span>
           <select id="orderSelect" aria-label="Sort order">
-            <option value="added-desc">Newest first</option>
-            <option value="added" selected>Oldest first</option>
+            <option value="">Select</option>
+            <option value="desc" selected>Newest first</option>
+            <option value="asc">Oldest first</option>
           </select>
         </label>
-        <button type="button" id="btnRandom" class="btn ghost" title="Shuffle into random order (same as Order by: Random)" disabled>Random</button>
+        <button type="button" id="btnRandom" class="btn ghost" title="Shuffle into random order" disabled>Random</button>
         <button type="button" id="btnAdd" class="btn primary">Add URL</button>
       </div>
     </header>

@@ -9,7 +9,7 @@ const state = {
   page: 1,
   limit: 16,
   gridCols: 4,
-  sortOrder: "added",
+  sortOrder: "asc",
   /** When `sortOrder` is `random`, display order (canonical `urls` is unchanged). */
   shuffledUrls: null,
   thumbCache: new Map(),
@@ -20,7 +20,7 @@ const LS_GRID = "vul:gridCols";
 const LS_SORT = "vul:sortOrder";
 const ALLOWED_LIMITS = new Set([8, 12, 16, 24, 32, 48]);
 const ALLOWED_GRIDS = new Set([3, 4, 5, 6]);
-const ALLOWED_SORTS = new Set(["added", "added-desc", "az", "za", "random"]);
+const ALLOWED_SORTS = new Set(["asc", "desc", "random"]);
 
 const $ = (id) => document.getElementById(id);
 
@@ -48,10 +48,13 @@ function readSavedSortOrder() {
   try {
     const v = localStorage.getItem(LS_SORT) || "";
     if (ALLOWED_SORTS.has(v)) return v;
+    if (v === "added") return "asc";
+    if (v === "added-desc") return "desc";
+    if (v === "az" || v === "za") return "asc";
   } catch {
     /* ignore */
   }
-  return "added";
+  return "asc";
 }
 
 function applyUiPrefs() {
@@ -87,6 +90,18 @@ function shuffleCopy(arr) {
   return a;
 }
 
+function syncOrderSelect() {
+  const sel = $("orderSelect");
+  if (!sel) return;
+  if (state.sortOrder === "random") {
+    sel.value = "";
+  } else if (state.sortOrder === "asc" || state.sortOrder === "desc") {
+    sel.value = state.sortOrder;
+  } else {
+    sel.value = "";
+  }
+}
+
 function getDisplayUrls() {
   const u = state.urls;
   if (u.length === 0) return [];
@@ -101,13 +116,9 @@ function getDisplayUrls() {
   state.shuffledUrls = null;
   const copy = [...u];
   switch (state.sortOrder) {
-    case "added-desc":
+    case "desc":
       return copy.reverse();
-    case "az":
-      return copy.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
-    case "za":
-      return copy.sort((a, b) => b.localeCompare(a, undefined, { sensitivity: "base" }));
-    case "added":
+    case "asc":
     default:
       return copy;
   }
@@ -136,6 +147,7 @@ async function loadUrls() {
 }
 
 function render() {
+  syncOrderSelect();
   const empty = $("emptyState");
   const grid = $("grid");
   const pager = $("pager");
@@ -150,6 +162,7 @@ function render() {
   grid.style.setProperty("--cols", String(state.gridCols));
 
   if (state.urls.length === 0) {
+    if (btnRandom) btnRandom.disabled = true;
     empty.classList.remove("hidden");
     grid.innerHTML = "";
     pager.classList.add("hidden");
@@ -306,8 +319,6 @@ function shuffleLibraryOrder() {
   if (state.urls.length === 0) return;
   state.sortOrder = "random";
   state.shuffledUrls = shuffleCopy(state.urls);
-  const sel = $("orderSelect");
-  if (sel) sel.value = "random";
   state.page = 1;
   persistUiPrefs();
   render();
@@ -330,7 +341,10 @@ function wire() {
   if (y) y.textContent = String(new Date().getFullYear());
   wireExternalLinks();
 
-  $("btnRandom").addEventListener("click", shuffleLibraryOrder);
+  const btnRandom = $("btnRandom");
+  if (btnRandom) {
+    btnRandom.addEventListener("click", shuffleLibraryOrder);
+  }
   $("btnAdd").addEventListener("click", openModal);
   $("modalCancel").addEventListener("click", closeModal);
   $("modalSave").addEventListener("click", saveModal);
@@ -369,15 +383,17 @@ function wire() {
     render();
   });
 
-  $("orderSelect").value = state.sortOrder;
+  syncOrderSelect();
   $("orderSelect").addEventListener("change", () => {
     const v = $("orderSelect").value;
-    if (!ALLOWED_SORTS.has(v)) return;
-    state.sortOrder = v;
-    if (v === "random") {
-      state.shuffledUrls = shuffleCopy(state.urls);
-    } else {
+    if (v === "desc" || v === "asc") {
+      state.sortOrder = v;
       state.shuffledUrls = null;
+    } else if (v === "") {
+      state.sortOrder = "asc";
+      state.shuffledUrls = null;
+    } else {
+      return;
     }
     state.page = 1;
     persistUiPrefs();
