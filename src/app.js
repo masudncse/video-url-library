@@ -5,13 +5,14 @@ const PLACEHOLDER_SVG =
   );
 
 const state = {
-  urls: [],
+  /** @type {{ id: string, timestamp: number, url: string }[]} */
+  entries: [],
   page: 1,
   limit: 16,
   gridCols: 4,
   sortOrder: "asc",
-  /** When `sortOrder` is `random`, display order (canonical `urls` is unchanged). */
-  shuffledUrls: null,
+  /** When `sortOrder` is `random`, display order (canonical `entries` is unchanged). */
+  shuffledItems: null,
   thumbCache: new Map(),
 };
 
@@ -90,6 +91,42 @@ function shuffleCopy(arr) {
   return a;
 }
 
+function normalizeDbRows(raw) {
+  if (!Array.isArray(raw)) return [];
+  const out = [];
+  for (const row of raw) {
+    if (row && typeof row === "object" && typeof row.url === "string") {
+      const url = row.url.trim();
+      if (!url) continue;
+      const ts =
+        typeof row.timestamp === "number" && Number.isFinite(row.timestamp)
+          ? row.timestamp
+          : 0;
+      out.push({
+        id: typeof row.id === "string" ? row.id : "",
+        timestamp: ts,
+        url,
+      });
+    } else if (typeof row === "string" && row.trim()) {
+      out.push({ id: "", timestamp: 0, url: row.trim() });
+    }
+  }
+  return out;
+}
+
+function formatItemTime(ms) {
+  const n = Number(ms);
+  if (!Number.isFinite(n) || n <= 0) return "—";
+  try {
+    return new Date(n).toLocaleString(undefined, {
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
+  } catch {
+    return "—";
+  }
+}
+
 function syncOrderSelect() {
   const sel = $("orderSelect");
   if (!sel) return;
@@ -102,18 +139,18 @@ function syncOrderSelect() {
   }
 }
 
-function getDisplayUrls() {
-  const u = state.urls;
+function getDisplayItems() {
+  const u = state.entries;
   if (u.length === 0) return [];
 
   if (state.sortOrder === "random") {
-    if (!state.shuffledUrls || state.shuffledUrls.length !== u.length) {
-      state.shuffledUrls = shuffleCopy(u);
+    if (!state.shuffledItems || state.shuffledItems.length !== u.length) {
+      state.shuffledItems = shuffleCopy(u);
     }
-    return state.shuffledUrls;
+    return state.shuffledItems;
   }
 
-  state.shuffledUrls = null;
+  state.shuffledItems = null;
   const copy = [...u];
   switch (state.sortOrder) {
     case "desc":
@@ -125,21 +162,22 @@ function getDisplayUrls() {
 }
 
 function totalPages() {
-  const n = getDisplayUrls().length;
+  const n = getDisplayItems().length;
   if (n === 0) return 1;
   return Math.max(1, Math.ceil(n / state.limit));
 }
 
 function currentSlice() {
-  const list = getDisplayUrls();
+  const list = getDisplayItems();
   const start = (state.page - 1) * state.limit;
   return list.slice(start, start + state.limit);
 }
 
 async function loadUrls() {
-  state.urls = await window.api.dbRead();
+  const raw = await window.api.dbRead();
+  state.entries = normalizeDbRows(raw);
   if (state.sortOrder === "random") {
-    state.shuffledUrls = shuffleCopy(state.urls);
+    state.shuffledItems = shuffleCopy(state.entries);
   }
   const max = totalPages();
   if (state.page > max) state.page = max;
@@ -156,12 +194,12 @@ function render() {
   const btnNext = $("btnNext");
   const btnRandom = $("btnRandom");
   if (btnRandom) {
-    btnRandom.disabled = state.urls.length === 0;
+    btnRandom.disabled = state.entries.length === 0;
   }
 
   grid.style.setProperty("--cols", String(state.gridCols));
 
-  if (state.urls.length === 0) {
+  if (state.entries.length === 0) {
     if (btnRandom) btnRandom.disabled = true;
     empty.classList.remove("hidden");
     grid.innerHTML = "";
@@ -174,12 +212,13 @@ function render() {
 
   const pages = totalPages();
   const slice = currentSlice();
-  pageInfo.textContent = `Page ${state.page} of ${pages} · ${state.urls.length} total`;
+  pageInfo.textContent = `Page ${state.page} of ${pages} · ${state.entries.length} total`;
   btnPrev.disabled = state.page <= 1;
   btnNext.disabled = state.page >= pages;
 
   grid.innerHTML = "";
-  slice.forEach((url) => {
+  slice.forEach((item) => {
+    const url = item.url;
     const card = document.createElement("article");
     card.className = "card";
     card.dataset.url = url;
@@ -208,6 +247,9 @@ function render() {
 
     const body = document.createElement("div");
     body.className = "card-body";
+    const timeRow = document.createElement("div");
+    timeRow.className = "card-time";
+    timeRow.textContent = formatItemTime(item.timestamp);
     const line = document.createElement("div");
     line.className = "card-url";
     line.textContent = url;
@@ -243,7 +285,7 @@ function render() {
     });
 
     actions.append(btnOpen, btnCopy, btnRemove);
-    body.append(line, actions);
+    body.append(timeRow, line, actions);
     card.append(wrap, body);
     grid.appendChild(card);
 
@@ -287,13 +329,40 @@ async function applyThumbnail(img, url) {
   }
 }
 
-function openModal() {
+function looksLikeHttpUrl(string) {
+  try {
+    const u = new URL(String(string).trim());
+    return u.protocol === 'http:' || u.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+function firstClipboardLine(text) {
+  return String(text || '')
+    .split(/\r?\n/)[0]
+    .trim();
+}
+
+async function openModal() {
   $("modalBackdrop").classList.remove("hidden");
   $("modalBackdrop").setAttribute("aria-hidden", "false");
   $("modalError").classList.add("hidden");
   $("modalError").textContent = "";
   $("urlInput").value = "";
-  $("urlInput").focus();
+  try {
+    const clip = await window.api.readClipboardText();
+    const line = firstClipboardLine(clip);
+    if (line && looksLikeHttpUrl(line)) {
+      $("urlInput").value = line;
+    }
+  } catch {
+    /* ignore clipboard errors */
+  }
+  const input = $("urlInput");
+  input.focus();
+  const len = input.value.length;
+  input.setSelectionRange(len, len);
 }
 
 function closeModal() {
@@ -316,12 +385,49 @@ async function saveModal() {
 }
 
 function shuffleLibraryOrder() {
-  if (state.urls.length === 0) return;
+  if (state.entries.length === 0) return;
   state.sortOrder = "random";
-  state.shuffledUrls = shuffleCopy(state.urls);
+  state.shuffledItems = shuffleCopy(state.entries);
   state.page = 1;
   persistUiPrefs();
   render();
+}
+
+let exportDirPath = "";
+let importFilePath = "";
+
+function openExportModal() {
+  if (!$("lockBackdrop").classList.contains("hidden")) return;
+  exportDirPath = "";
+  $("exportPathInput").value = "";
+  $("exportSubmitBtn").disabled = true;
+  const err = $("exportModalError");
+  err.textContent = "";
+  err.classList.add("hidden");
+  $("exportBackdrop").classList.remove("hidden");
+  $("exportBackdrop").setAttribute("aria-hidden", "false");
+}
+
+function closeExportModal() {
+  $("exportBackdrop").classList.add("hidden");
+  $("exportBackdrop").setAttribute("aria-hidden", "true");
+}
+
+function openImportModal() {
+  if (!$("lockBackdrop").classList.contains("hidden")) return;
+  importFilePath = "";
+  $("importPathInput").value = "";
+  $("importSubmitBtn").disabled = true;
+  const err = $("importModalError");
+  err.textContent = "";
+  err.classList.add("hidden");
+  $("importBackdrop").classList.remove("hidden");
+  $("importBackdrop").setAttribute("aria-hidden", "false");
+}
+
+function closeImportModal() {
+  $("importBackdrop").classList.add("hidden");
+  $("importBackdrop").setAttribute("aria-hidden", "true");
 }
 
 function wireExternalLinks() {
@@ -362,6 +468,14 @@ function wire() {
       closePinSettingsModal();
       return;
     }
+    if (!$("importBackdrop").classList.contains("hidden")) {
+      closeImportModal();
+      return;
+    }
+    if (!$("exportBackdrop").classList.contains("hidden")) {
+      closeExportModal();
+      return;
+    }
     if (!$("lockBackdrop").classList.contains("hidden")) return;
     if (!$("modalBackdrop").classList.contains("hidden")) closeModal();
   });
@@ -388,10 +502,10 @@ function wire() {
     const v = $("orderSelect").value;
     if (v === "desc" || v === "asc") {
       state.sortOrder = v;
-      state.shuffledUrls = null;
+      state.shuffledItems = null;
     } else if (v === "") {
       state.sortOrder = "asc";
-      state.shuffledUrls = null;
+      state.shuffledItems = null;
     } else {
       return;
     }
@@ -412,6 +526,69 @@ function wire() {
       state.page += 1;
       render();
     }
+  });
+
+  $("exportBrowseBtn").addEventListener("click", async () => {
+    const r = await window.api.pickExportDirectory();
+    if (r.ok && r.path) {
+      exportDirPath = r.path;
+      $("exportPathInput").value = r.path;
+      $("exportSubmitBtn").disabled = false;
+    }
+  });
+  $("exportCancelBtn").addEventListener("click", () => closeExportModal());
+  $("exportSubmitBtn").addEventListener("click", async () => {
+    const errEl = $("exportModalError");
+    errEl.classList.add("hidden");
+    const r = await window.api.exportDataToDirectory(exportDirPath);
+    if (!r.ok) {
+      errEl.textContent = r.error || "Export failed.";
+      errEl.classList.remove("hidden");
+      return;
+    }
+    closeExportModal();
+  });
+  $("exportBackdrop").addEventListener("click", (e) => {
+    if (e.target === $("exportBackdrop")) closeExportModal();
+  });
+
+  $("importBrowseBtn").addEventListener("click", async () => {
+    const r = await window.api.pickImportFile();
+    if (r.ok && r.path) {
+      importFilePath = r.path;
+      $("importPathInput").value = r.path;
+      $("importSubmitBtn").disabled = false;
+    }
+  });
+  $("importCancelBtn").addEventListener("click", () => closeImportModal());
+  $("importSubmitBtn").addEventListener("click", async () => {
+    const errEl = $("importModalError");
+    errEl.classList.add("hidden");
+    if (!confirm("Replace your current library with the imported file? This cannot be undone.")) {
+      return;
+    }
+    const r = await window.api.importDataFromFile(importFilePath);
+    if (!r.ok) {
+      errEl.textContent = r.error || "Import failed.";
+      errEl.classList.remove("hidden");
+      return;
+    }
+    state.thumbCache.clear();
+    state.page = 1;
+    closeImportModal();
+    await loadUrls();
+  });
+  $("importBackdrop").addEventListener("click", (e) => {
+    if (e.target === $("importBackdrop")) closeImportModal();
+  });
+
+  window.api.onOptionsOpenExport(() => {
+    if (!$("lockBackdrop").classList.contains("hidden")) return;
+    openExportModal();
+  });
+  window.api.onOptionsOpenImport(() => {
+    if (!$("lockBackdrop").classList.contains("hidden")) return;
+    openImportModal();
   });
 
   wirePinSecurity();

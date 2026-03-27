@@ -203,6 +203,38 @@
       </div>
     </div>
 
+    <div id="exportBackdrop" class="modal-backdrop hidden" aria-hidden="true">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="exportModalTitle">
+        <h2 id="exportModalTitle" class="modal-title">Export library</h2>
+        <p class="modal-hint">Choose a folder. Your library will be saved as <strong>data-YYYY-MM-DD.json</strong> (today’s date).</p>
+        <input type="text" id="exportPathInput" class="input path-display" readonly placeholder="No folder selected" />
+        <p id="exportModalError" class="modal-error hidden"></p>
+        <div class="modal-actions modal-actions-split">
+          <button type="button" id="exportBrowseBtn" class="btn ghost">Browse</button>
+          <div class="modal-actions-inline">
+            <button type="button" id="exportCancelBtn" class="btn ghost">Cancel</button>
+            <button type="button" id="exportSubmitBtn" class="btn primary" disabled>Export</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="importBackdrop" class="modal-backdrop hidden" aria-hidden="true">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="importModalTitle">
+        <h2 id="importModalTitle" class="modal-title">Import library</h2>
+        <p class="modal-hint">Choose a <strong>data.json</strong> file. This <strong>replaces</strong> your current library.</p>
+        <input type="text" id="importPathInput" class="input path-display" readonly placeholder="No file selected" />
+        <p id="importModalError" class="modal-error hidden"></p>
+        <div class="modal-actions modal-actions-split">
+          <button type="button" id="importBrowseBtn" class="btn ghost">Browse</button>
+          <div class="modal-actions-inline">
+            <button type="button" id="importCancelBtn" class="btn ghost">Cancel</button>
+            <button type="button" id="importSubmitBtn" class="btn primary" disabled>Import</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div id="modalBackdrop" class="modal-backdrop hidden" aria-hidden="true">
       <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
         <h2 id="modalTitle" class="modal-title">Add video URL</h2>

@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld('api', {
   dbRemove: (url) => ipcRenderer.invoke('db-remove', url),
   thumbnailForUrl: (url) => ipcRenderer.invoke('thumbnail-for-url', url),
   copyText: (text) => ipcRenderer.invoke('copy-text', text),
+  readClipboardText: () => ipcRenderer.invoke('read-clipboard-text'),
   showAbout: () => ipcRenderer.invoke('show-about'),
   openExternal: (url) => ipcRenderer.invoke('open-external', url),
   securityPinState: () => ipcRenderer.invoke('security-pin-state'),
@@ -17,5 +18,15 @@ contextBridge.exposeInMainWorld('api', {
   securityRemovePin: (currentPin) => ipcRenderer.invoke('security-remove-pin', { currentPin }),
   onSecurityOpenSettings: (callback) => {
     ipcRenderer.on('security-open-settings', () => callback());
+  },
+  pickExportDirectory: () => ipcRenderer.invoke('pick-export-directory'),
+  pickImportFile: () => ipcRenderer.invoke('pick-import-file'),
+  exportDataToDirectory: (dirPath) => ipcRenderer.invoke('export-data-to-directory', dirPath),
+  importDataFromFile: (filePath) => ipcRenderer.invoke('import-data-from-file', filePath),
+  onOptionsOpenExport: (callback) => {
+    ipcRenderer.on('options-open-export', () => callback());
+  },
+  onOptionsOpenImport: (callback) => {
+    ipcRenderer.on('options-open-import', () => callback());
   },
 });

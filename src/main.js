@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, clipboard, Menu, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, clipboard, Menu, shell, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs/promises');
 const fsSync = require('fs');
@@ -47,6 +47,19 @@ function openAboutWindow() {
 }
 
 function getDbPath() {
+  if (app.isPackaged) {
+    return path.join(app.getPath('userData'), 'data.json');
+  }
+  return path.join(rootDir, 'storage', 'data.json');
+}
+
+/** Previous JSON filename; migrated once to `data.json`. */
+function getLegacyDatabaseJsonPath() {
+  return path.join(path.dirname(getDbPath()), 'database.json');
+}
+
+/** Legacy plain-text DB path (one URL per line; optional Base64). Migrated once to `data.json`. */
+function getLegacyTxtDbPath() {
   if (app.isPackaged) {
     return path.join(app.getPath('userData'), 'database.txt');
   }
@@ -100,12 +113,8 @@ function isHttpUrl(string) {
   }
 }
 
-/** One line in the DB file: Base64(UTF-8 URL). Legacy plain https? URLs still read OK. */
-function encodeUrlForStorage(url) {
-  return Buffer.from(String(url).trim(), 'utf8').toString('base64');
-}
-
-function decodeUrlFromStorage(line) {
+/** Legacy `.txt` line: plain `http(s)` URL or Base64(UTF-8 URL). */
+function decodeUrlFromLegacyTxtLine(line) {
   const s = String(line).trim();
   if (!s) return '';
   if (isHttpUrl(s)) return s;
@@ -118,16 +127,160 @@ function decodeUrlFromStorage(line) {
   return '';
 }
 
-function parseStoredDbToUrls(raw) {
+function parseLegacyTxtToUrls(raw) {
   return String(raw || '')
     .split(/\r?\n/)
-    .map((l) => decodeUrlFromStorage(l))
+    .map((l) => decodeUrlFromLegacyTxtLine(l))
     .filter(Boolean);
 }
 
-function urlsToStorageText(urls) {
-  if (!urls.length) return '';
-  return `${urls.map(encodeUrlForStorage).join('\n')}\n`;
+const ID_ALPHABET = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+
+function randomId6() {
+  const bytes = crypto.randomBytes(6);
+  let s = '';
+  for (let i = 0; i < 6; i++) {
+    s += ID_ALPHABET[bytes[i] % ID_ALPHABET.length];
+  }
+  return s;
+}
+
+/** @param {Set<string>} usedIds */
+function newUniqueId(usedIds) {
+  let id;
+  do {
+    id = randomId6();
+  } while (usedIds.has(id));
+  usedIds.add(id);
+  return id;
+}
+
+function isValidEntryId(s) {
+  return typeof s === 'string' && /^[A-Za-z0-9]{6}$/.test(s);
+}
+
+function parseDbEntryFields(row) {
+  if (!row || typeof row.url !== 'string') return null;
+  const url = row.url.trim();
+  if (!isHttpUrl(url)) return null;
+  let ts = row.timestamp;
+  if (typeof ts === 'number' && Number.isFinite(ts)) {
+    return { timestamp: Math.trunc(ts), url };
+  }
+  if (typeof ts === 'string') {
+    const parsed = Date.parse(ts);
+    if (!Number.isNaN(parsed)) return { timestamp: parsed, url };
+  }
+  return { timestamp: Date.now(), url };
+}
+
+function sortEntriesByTimestamp(entries) {
+  return [...entries].sort((a, b) => a.timestamp - b.timestamp);
+}
+
+function formatDbJson(entries) {
+  return `${JSON.stringify(sortEntriesByTimestamp(entries), null, 2)}\n`;
+}
+
+/** e.g. `data-2026-03-28.json` (local date). */
+function exportDataFileName() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `data-${y}-${m}-${day}.json`;
+}
+
+function entriesFromParsedArray(data) {
+  if (!Array.isArray(data)) return [];
+  const usedIds = new Set();
+  const out = [];
+  for (const row of data) {
+    const parsed = parseDbEntryFields(row);
+    if (!parsed) continue;
+    let id =
+      isValidEntryId(row.id) && !usedIds.has(row.id) ? row.id : newUniqueId(usedIds);
+    if (!usedIds.has(id)) usedIds.add(id);
+    out.push({ id, timestamp: parsed.timestamp, url: parsed.url });
+  }
+  return sortEntriesByTimestamp(out);
+}
+
+async function migrateLegacyDatabaseJsonToData() {
+  const oldPath = getLegacyDatabaseJsonPath();
+  let raw;
+  try {
+    raw = await fs.readFile(oldPath, 'utf8');
+  } catch (e) {
+    if (e.code === 'ENOENT') return null;
+    throw e;
+  }
+  let data;
+  try {
+    data = JSON.parse(raw);
+  } catch {
+    data = [];
+  }
+  const entries = entriesFromParsedArray(data);
+  const newPath = getDbPath();
+  await ensureParentDir(newPath);
+  await fs.writeFile(newPath, formatDbJson(entries), 'utf8');
+  try {
+    await fs.unlink(oldPath);
+  } catch {
+    /* ignore */
+  }
+  return entries;
+}
+
+async function migrateLegacyTxtToJson() {
+  const txtPath = getLegacyTxtDbPath();
+  let raw;
+  try {
+    raw = await fs.readFile(txtPath, 'utf8');
+  } catch (e) {
+    if (e.code === 'ENOENT') return [];
+    throw e;
+  }
+  const urls = parseLegacyTxtToUrls(raw);
+  const base = Date.now();
+  const usedIds = new Set();
+  const entries = urls.map((url, i) => ({
+    id: newUniqueId(usedIds),
+    timestamp: base + i,
+    url,
+  }));
+  const jsonPath = getDbPath();
+  await ensureParentDir(jsonPath);
+  await fs.writeFile(jsonPath, formatDbJson(entries), 'utf8');
+  return entries;
+}
+
+async function readDbEntries() {
+  const jsonPath = getDbPath();
+  let raw;
+  try {
+    raw = await fs.readFile(jsonPath, 'utf8');
+  } catch (e) {
+    if (e.code === 'ENOENT') {
+      const fromOldJson = await migrateLegacyDatabaseJsonToData();
+      if (fromOldJson !== null) return fromOldJson;
+      return migrateLegacyTxtToJson();
+    }
+    throw e;
+  }
+  try {
+    const data = JSON.parse(raw);
+    return entriesFromParsedArray(data);
+  } catch {
+    return [];
+  }
+}
+
+async function writeDbEntries(entries) {
+  const jsonPath = getDbPath();
+  await ensureParentDir(jsonPath);
+  await fs.writeFile(jsonPath, formatDbJson(entries), 'utf8');
 }
 
 function youtubeVideoId(url) {
@@ -171,14 +324,8 @@ async function fetchOgImage(pageUrl) {
 }
 
 ipcMain.handle('db-read', async () => {
-  const p = getDbPath();
-  try {
-    const raw = await fs.readFile(p, 'utf8');
-    return parseStoredDbToUrls(raw);
-  } catch (e) {
-    if (e.code === 'ENOENT') return [];
-    throw e;
-  }
+  const entries = await readDbEntries();
+  return entries.map((e) => ({ id: e.id, timestamp: e.timestamp, url: e.url }));
 });
 
 ipcMain.handle('db-add', async (_e, url) => {
@@ -186,38 +333,90 @@ ipcMain.handle('db-add', async (_e, url) => {
   if (!isHttpUrl(trimmed)) {
     return { ok: false, error: 'Enter a valid http(s) URL.' };
   }
-  const p = getDbPath();
-  let lines = [];
-  try {
-    const raw = await fs.readFile(p, 'utf8');
-    lines = parseStoredDbToUrls(raw);
-  } catch (err) {
-    if (err.code !== 'ENOENT') throw err;
-  }
-  if (lines.includes(trimmed)) {
+  const entries = await readDbEntries();
+  if (entries.some((e) => e.url === trimmed)) {
     return { ok: false, error: 'This URL is already in the list.' };
   }
-  lines.push(trimmed);
-  await ensureParentDir(p);
-  await fs.writeFile(p, urlsToStorageText(lines), 'utf8');
+  const usedIds = new Set(entries.map((e) => e.id));
+  entries.push({
+    id: newUniqueId(usedIds),
+    timestamp: Date.now(),
+    url: trimmed,
+  });
+  await writeDbEntries(entries);
   return { ok: true };
 });
 
 ipcMain.handle('db-remove', async (_e, urlToRemove) => {
   const target = String(urlToRemove || '').trim();
-  const p = getDbPath();
-  let lines = [];
-  try {
-    const raw = await fs.readFile(p, 'utf8');
-    lines = parseStoredDbToUrls(raw);
-  } catch (err) {
-    if (err.code === 'ENOENT') return { ok: true };
-    throw err;
-  }
-  const next = lines.filter((u) => u !== target);
-  await ensureParentDir(p);
-  await fs.writeFile(p, urlsToStorageText(next), 'utf8');
+  const entries = await readDbEntries();
+  const next = entries.filter((e) => e.url !== target);
+  await writeDbEntries(next);
   return { ok: true };
+});
+
+function getMainWindow() {
+  return mainWindow && !mainWindow.isDestroyed() ? mainWindow : null;
+}
+
+ipcMain.handle('pick-export-directory', async () => {
+  const win = getMainWindow();
+  const r = await dialog.showOpenDialog(win || undefined, {
+    title: 'Choose folder for export',
+    properties: ['openDirectory', 'createDirectory'],
+  });
+  if (r.canceled || !r.filePaths[0]) {
+    return { ok: false, path: null };
+  }
+  return { ok: true, path: r.filePaths[0] };
+});
+
+ipcMain.handle('pick-import-file', async () => {
+  const win = getMainWindow();
+  const r = await dialog.showOpenDialog(win || undefined, {
+    title: 'Choose JSON file to import',
+    properties: ['openFile'],
+    filters: [{ name: 'JSON', extensions: ['json'] }],
+  });
+  if (r.canceled || !r.filePaths[0]) {
+    return { ok: false, path: null };
+  }
+  return { ok: true, path: r.filePaths[0] };
+});
+
+ipcMain.handle('export-data-to-directory', async (_e, dirPath) => {
+  const dir = String(dirPath || '').trim();
+  if (!dir) {
+    return { ok: false, error: 'No folder selected.' };
+  }
+  const entries = await readDbEntries();
+  const name = exportDataFileName();
+  const dest = path.join(dir, name);
+  await ensureParentDir(dest);
+  await fs.writeFile(dest, formatDbJson(entries), 'utf8');
+  return { ok: true, fileName: name };
+});
+
+ipcMain.handle('import-data-from-file', async (_e, filePath) => {
+  const fp = String(filePath || '').trim();
+  if (!fp) {
+    return { ok: false, error: 'No file selected.' };
+  }
+  let raw;
+  try {
+    raw = await fs.readFile(fp, 'utf8');
+  } catch {
+    return { ok: false, error: 'Could not read file.' };
+  }
+  let data;
+  try {
+    data = JSON.parse(raw);
+  } catch {
+    return { ok: false, error: 'Invalid JSON.' };
+  }
+  const entries = entriesFromParsedArray(data);
+  await writeDbEntries(entries);
+  return { ok: true, count: entries.length };
 });
 
 ipcMain.handle('thumbnail-for-url', async (_e, url) => {
@@ -242,6 +441,8 @@ ipcMain.handle('copy-text', async (_e, text) => {
   clipboard.writeText(String(text || ''));
   return true;
 });
+
+ipcMain.handle('read-clipboard-text', async () => clipboard.readText());
 
 ipcMain.handle('show-about', () => {
   openAboutWindow();
@@ -333,21 +534,51 @@ function sendSecuritySettings() {
   }
 }
 
+function sendOptionsOpenExport() {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('options-open-export');
+  }
+}
+
+function sendOptionsOpenImport() {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('options-open-import');
+  }
+}
+
 function buildMenu() {
+  /* Submenu padding and item height are drawn by the OS (Win/macOS/Linux); Electron does not expose spacing APIs. */
   const template = [
     {
       label: 'File',
       submenu: [{ role: 'quit', label: 'Exit' }],
     },
+    { type: 'separator' },
     {
       label: 'Security',
       submenu: [
         {
-          label: 'PIN settings…',
+          label: 'PIN settings',
           click: () => sendSecuritySettings(),
         },
       ],
     },
+    { type: 'separator' },
+    {
+      label: 'Options',
+      submenu: [
+        {
+          label: 'Export',
+          click: () => sendOptionsOpenExport(),
+        },
+        { type: 'separator' },
+        {
+          label: 'Import',
+          click: () => sendOptionsOpenImport(),
+        },
+      ],
+    },
+    { type: 'separator' },
     {
       label: 'Help',
       submenu: [

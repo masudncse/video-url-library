@@ -6,13 +6,13 @@ Desktop app built with Electron to save and manage video URLs with thumbnails an
 
 - **Save URLs** — Add `http` / `https` links via a dialog; duplicates are rejected.
 - **Thumbnails** — YouTube links use the standard preview image; other pages use **Open Graph** / **Twitter** image tags when available, otherwise a built-in placeholder.
-- **Card grid** — Each entry shows the URL, preview, and actions (**Open** in the system browser, **Copy** to clipboard, **Remove** with confirmation).
+- **Card grid** — Each entry shows **when it was added** (from `timestamp`), the URL, preview thumbnail, and actions (**Open**, **Copy**, **Remove** with confirmation).
 - **Pagination** — Choose **items per page** (8–500, fixed presets) and move with **Previous** / **Next**; shows page count and total URLs.
 - **Layout** — **Grid** column count (3–8); **per page** and **grid** choices are remembered (browser `localStorage`).
 - **Random** — Shuffle the current list order on screen (does not rewrite the saved file).
-- **PIN lock (optional)** — **Security → PIN settings…** to set, change, or remove a PIN (4–64 characters, stored hashed under app **userData**); unlock prompt when a PIN exists.
+- **PIN lock (optional)** — **Security → PIN settings** to set, change, or remove a PIN (4–64 characters, stored hashed under app **userData**); unlock prompt when a PIN exists.
 - **About** — **Help → About** opens a window with app summary and MRK Solution contact links (phone, social, portfolio).
-- **Menu** — **File → Exit**, **Security**, **Help** (standard Electron application menu).
+- **Menu** — **File → Exit**, **Security**, **Options → Export / Import** (export writes **`data-YYYY-MM-DD.json`** into a chosen folder; import picks any JSON backup), **Help** (standard Electron application menu).
 
 ## Screenshot
 
@@ -43,11 +43,11 @@ npm run watch
 
 Uses [nodemon](https://nodemon.io/) with `nodemon.json`. Or double-click **`start.bat`** for a normal start (`npm start` with Chrome remote debugging on port **8069**).
 
-Development data is stored in **`storage/database.txt`** (one URL per line, **Base64-encoded** UTF-8; older plain `https://…` lines are still read correctly). Packaged builds use **userData** for the same filename.
+Development data is stored in **`storage/data.json`**: an array of `{ "id": "<6-char random>", "timestamp": <ms>, "url": "<https://…>" }` (`id` is `a`–`z`, `A`–`Z`, `0`–`9`; plain URLs, no Base64). On first run, a legacy **`database.json`** or **`database.txt`** in the same folder is imported once, then removed or left on disk. Packaged builds use **userData** for **`data.json`**.
 
 ### PIN lock
 
-Use **Security → PIN settings…** to set, change, or remove a PIN (4–64 characters). If a PIN is set, it is stored (hashed) under the app **userData** folder as `pin-lock.json`; you must enter it each time the app opens.
+Use **Security → PIN settings** to set, change, or remove a PIN (4–64 characters). If a PIN is set, it is stored (hashed) under the app **userData** folder as `pin-lock.json`; you must enter it each time the app opens.
 
 ## Project layout
 
@@ -57,7 +57,7 @@ video-url-library/
 ├── src/              # main.js, preload.js, app.js, about.js
 ├── views/            # HTML
 ├── styles/           # CSS
-├── storage/          # Dev database (database.txt)
+├── storage/          # Dev data (data.json; legacy database.json / database.txt may exist until migrated)
 ├── images/           # icon.png (UI / macOS / Linux); icon.ico (Windows exe / taskbar)
 ├── dist/             # Created by pack/dist (gitignored until you build)
 ├── nodemon.json      # dev: npm run watch

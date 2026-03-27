@@ -369,6 +369,13 @@ select:focus,
   flex: 1;
 }
 
+.card-time {
+  font-size: 0.7rem;
+  line-height: 1.3;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+}
+
 .card-url {
   font-size: 0.72rem;
   line-height: 1.35;
@@ -454,6 +461,24 @@ select:focus,
   justify-content: flex-end;
   gap: 0.5rem;
   margin-top: 1rem;
+}
+
+.modal-actions-split {
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-actions-inline {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.input.path-display {
+  font-size: 0.8rem;
+  word-break: break-all;
+  color: var(--muted);
+  background: rgba(0, 0, 0, 0.2);
 }
 
 .hidden {
