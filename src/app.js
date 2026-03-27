@@ -18,8 +18,8 @@ const state = {
 const LS_LIMIT = "vul:limit";
 const LS_GRID = "vul:gridCols";
 const LS_SORT = "vul:sortOrder";
-const ALLOWED_LIMITS = new Set([8, 12, 16, 24, 32, 48]);
-const ALLOWED_GRIDS = new Set([3, 4, 5, 6]);
+const ALLOWED_LIMITS = new Set([8, 16, 24, 75, 100, 200, 300, 500]);
+const ALLOWED_GRIDS = new Set([3, 4, 5, 6, 7, 8]);
 const ALLOWED_SORTS = new Set(["asc", "desc", "random"]);
 
 const $ = (id) => document.getElementById(id);

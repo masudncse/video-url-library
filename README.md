@@ -7,8 +7,8 @@ Desktop app built with Electron to save and manage video URLs with thumbnails an
 - **Save URLs** — Add `http` / `https` links via a dialog; duplicates are rejected.
 - **Thumbnails** — YouTube links use the standard preview image; other pages use **Open Graph** / **Twitter** image tags when available, otherwise a built-in placeholder.
 - **Card grid** — Each entry shows the URL, preview, and actions (**Open** in the system browser, **Copy** to clipboard, **Remove** with confirmation).
-- **Pagination** — Choose **items per page** (8–48) and move with **Previous** / **Next**; shows page count and total URLs.
-- **Layout** — **Grid** column count (3–6); **per page** and **grid** choices are remembered (browser `localStorage`).
+- **Pagination** — Choose **items per page** (8–500, fixed presets) and move with **Previous** / **Next**; shows page count and total URLs.
+- **Layout** — **Grid** column count (3–8); **per page** and **grid** choices are remembered (browser `localStorage`).
 - **Random** — Shuffle the current list order on screen (does not rewrite the saved file).
 - **PIN lock (optional)** — **Security → PIN settings…** to set, change, or remove a PIN (4–64 characters, stored hashed under app **userData**); unlock prompt when a PIN exists.
 - **About** — **Help → About** opens a window with app summary and MRK Solution contact links (phone, social, portfolio).
