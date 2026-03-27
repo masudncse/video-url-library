@@ -9,13 +9,18 @@ const state = {
   page: 1,
   limit: 16,
   gridCols: 4,
+  sortOrder: "added",
+  /** When `sortOrder` is `random`, display order (canonical `urls` is unchanged). */
+  shuffledUrls: null,
   thumbCache: new Map(),
 };
 
 const LS_LIMIT = "vul:limit";
 const LS_GRID = "vul:gridCols";
+const LS_SORT = "vul:sortOrder";
 const ALLOWED_LIMITS = new Set([8, 12, 16, 24, 32, 48]);
 const ALLOWED_GRIDS = new Set([3, 4, 5, 6]);
+const ALLOWED_SORTS = new Set(["added", "added-desc", "az", "za", "random"]);
 
 const $ = (id) => document.getElementById(id);
 
@@ -39,15 +44,27 @@ function readSavedGridCols() {
   return 4;
 }
 
+function readSavedSortOrder() {
+  try {
+    const v = localStorage.getItem(LS_SORT) || "";
+    if (ALLOWED_SORTS.has(v)) return v;
+  } catch {
+    /* ignore */
+  }
+  return "added";
+}
+
 function applyUiPrefs() {
   state.limit = readSavedLimit();
   state.gridCols = readSavedGridCols();
+  state.sortOrder = readSavedSortOrder();
 }
 
 function persistUiPrefs() {
   try {
     localStorage.setItem(LS_LIMIT, String(state.limit));
     localStorage.setItem(LS_GRID, String(state.gridCols));
+    localStorage.setItem(LS_SORT, state.sortOrder);
   } catch {
     /* ignore */
   }
@@ -64,19 +81,55 @@ function shuffleInPlace(arr) {
   }
 }
 
+function shuffleCopy(arr) {
+  const a = [...arr];
+  shuffleInPlace(a);
+  return a;
+}
+
+function getDisplayUrls() {
+  const u = state.urls;
+  if (u.length === 0) return [];
+
+  if (state.sortOrder === "random") {
+    if (!state.shuffledUrls || state.shuffledUrls.length !== u.length) {
+      state.shuffledUrls = shuffleCopy(u);
+    }
+    return state.shuffledUrls;
+  }
+
+  state.shuffledUrls = null;
+  const copy = [...u];
+  switch (state.sortOrder) {
+    case "added-desc":
+      return copy.reverse();
+    case "az":
+      return copy.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+    case "za":
+      return copy.sort((a, b) => b.localeCompare(a, undefined, { sensitivity: "base" }));
+    case "added":
+    default:
+      return copy;
+  }
+}
+
 function totalPages() {
-  const n = state.urls.length;
+  const n = getDisplayUrls().length;
   if (n === 0) return 1;
   return Math.max(1, Math.ceil(n / state.limit));
 }
 
 function currentSlice() {
+  const list = getDisplayUrls();
   const start = (state.page - 1) * state.limit;
-  return state.urls.slice(start, start + state.limit);
+  return list.slice(start, start + state.limit);
 }
 
 async function loadUrls() {
   state.urls = await window.api.dbRead();
+  if (state.sortOrder === "random") {
+    state.shuffledUrls = shuffleCopy(state.urls);
+  }
   const max = totalPages();
   if (state.page > max) state.page = max;
   render();
@@ -251,8 +304,12 @@ async function saveModal() {
 
 function shuffleLibraryOrder() {
   if (state.urls.length === 0) return;
-  shuffleInPlace(state.urls);
+  state.sortOrder = "random";
+  state.shuffledUrls = shuffleCopy(state.urls);
+  const sel = $("orderSelect");
+  if (sel) sel.value = "random";
   state.page = 1;
+  persistUiPrefs();
   render();
 }
 
@@ -308,6 +365,21 @@ function wire() {
   $("gridSelect").addEventListener("change", () => {
     const n = parseInt($("gridSelect").value, 10) || 4;
     state.gridCols = ALLOWED_GRIDS.has(n) ? n : 4;
+    persistUiPrefs();
+    render();
+  });
+
+  $("orderSelect").value = state.sortOrder;
+  $("orderSelect").addEventListener("change", () => {
+    const v = $("orderSelect").value;
+    if (!ALLOWED_SORTS.has(v)) return;
+    state.sortOrder = v;
+    if (v === "random") {
+      state.shuffledUrls = shuffleCopy(state.urls);
+    } else {
+      state.shuffledUrls = null;
+    }
+    state.page = 1;
     persistUiPrefs();
     render();
   });

@@ -62,7 +62,14 @@
             <option value="6">6</option>
           </select>
         </label>
-        <button type="button" id="btnRandom" class="btn ghost" title="Shuffle the library into a random order" disabled>Random</button>
+        <label class="field">
+          <span class="field-label">Order by</span>
+          <select id="orderSelect" aria-label="Sort order">
+            <option value="added-desc">Newest first</option>
+            <option value="added" selected>Oldest first</option>
+          </select>
+        </label>
+        <button type="button" id="btnRandom" class="btn ghost" title="Shuffle into random order (same as Order by: Random)" disabled>Random</button>
         <button type="button" id="btnAdd" class="btn primary">Add URL</button>
       </div>
     </header>
