@@ -1,0 +1,8 @@
+@echo off
+REM Copy to dist-signed.bat, set your paths, then run (do not commit dist-signed.bat).
+
+set CSC_LINK=C:\path\to\your-codesign.pfx
+set CSC_KEY_PASSWORD=your-pfx-password
+
+cd /d "%~dp0"
+call npm run dist:signed

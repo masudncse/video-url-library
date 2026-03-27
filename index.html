@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' https: data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'" />
+    <title>Video URL Library</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="toolbar">
+      <h1 class="title">Video URL Library</h1>
+      <div class="toolbar-actions">
+        <label class="field">
+          <span class="field-label">Per page</span>
+          <select id="limitSelect" aria-label="Items per page">
+            <option value="8">8</option>
+            <option value="12">12</option>
+            <option value="16" selected>16</option>
+            <option value="24">24</option>
+            <option value="32">32</option>
+            <option value="48">48</option>
+          </select>
+        </label>
+        <label class="field">
+          <span class="field-label">Grid</span>
+          <select id="gridSelect" aria-label="Columns per row">
+            <option value="3">3</option>
+            <option value="4" selected>4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+          </select>
+        </label>
+        <button type="button" id="btnRandom" class="btn ghost" title="Open a random URL from your library" disabled>Random</button>
+        <button type="button" id="btnAdd" class="btn primary">Add URL</button>
+      </div>
+    </header>
+
+    <main class="main">
+      <div id="emptyState" class="empty hidden" role="status">
+        <p>No URLs yet. Click <strong>Add URL</strong> to save your first link.</p>
+      </div>
+      <div id="grid" class="card-grid" style="--cols: 4"></div>
+      <nav id="pager" class="pager hidden" aria-label="Pagination">
+        <button type="button" id="btnPrev" class="btn ghost">Previous</button>
+        <span id="pageInfo" class="page-info"></span>
+        <button type="button" id="btnNext" class="btn ghost">Next</button>
+      </nav>
+    </main>
+
+    <div id="modalBackdrop" class="modal-backdrop hidden" aria-hidden="true">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <h2 id="modalTitle" class="modal-title">Add video URL</h2>
+        <p class="modal-hint">Paste a link from YouTube, or any supported site.</p>
+        <input type="url" id="urlInput" class="input" placeholder="https://..." autocomplete="off" />
+        <p id="modalError" class="modal-error hidden"></p>
+        <div class="modal-actions">
+          <button type="button" id="modalCancel" class="btn ghost">Cancel</button>
+          <button type="button" id="modalSave" class="btn primary">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,52 @@
+{
+  "name": "managed-url-with-thumbnail",
+  "version": "1.0.0",
+  "description": "Desktop app to save video URLs with thumbnails and pagination",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder --win",
+    "dist:signed": "electron-builder --win -c.win.signAndEditExecutable=true",
+    "dist:dir": "electron-builder --win --dir"
+  },
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.managedurl.videolibrary",
+    "productName": "Video URL Library",
+    "directories": { "output": "dist" },
+    "files": [
+      "main.js",
+      "preload.js",
+      "index.html",
+      "about.html",
+      "about.js",
+      "styles.css",
+      "app.js"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "allowElevation": true,
+      "perMachine": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Video URL Library",
+      "uninstallDisplayName": "Video URL Library"
+    }
+  }
+}

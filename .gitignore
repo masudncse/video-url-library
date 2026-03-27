@@ -1,0 +1,16 @@
+node_modules/
+dist/
+out/
+*.log
+*.pfx
+*.p12
+certs/
+.env
+.env.*
+Thumbs.db
+Desktop.ini
+*.tmp
+*.temp
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
