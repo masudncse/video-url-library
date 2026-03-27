@@ -13,15 +13,27 @@
       <div class="lock-modal" role="dialog" aria-modal="true" aria-labelledby="lockTitle">
         <h2 id="lockTitle" class="lock-title">Enter PIN</h2>
         <p class="lock-hint">This library is protected. Enter your PIN to continue.</p>
-        <input
-          type="password"
-          id="lockInput"
-          class="input lock-input"
-          placeholder="PIN"
-          autocomplete="off"
-          autocapitalize="off"
-          spellcheck="false"
-        />
+        <div class="pin-input-wrap lock-pin-wrap">
+          <input
+            type="password"
+            id="lockInput"
+            class="input lock-input"
+            placeholder="PIN"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+          />
+          <button type="button" class="pin-toggle-vis" aria-label="Show PIN" title="Show PIN">
+            <svg class="icon-eye" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+            <svg class="icon-eye-off hidden" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+              <line x1="1" y1="1" x2="23" y2="23" />
+            </svg>
+          </button>
+        </div>
         <p id="lockError" class="modal-error hidden"></p>
         <button type="button" id="lockSubmit" class="btn primary lock-submit">Unlock</button>
       </div>
@@ -81,11 +93,35 @@
           <p class="modal-hint">Create a PIN (4–64 characters). You will need it every time you open the app.</p>
           <label class="field pin-field">
             <span class="field-label">New PIN</span>
-            <input type="password" id="pinSetNew" class="input" autocomplete="new-password" />
+            <div class="pin-input-wrap">
+              <input type="password" id="pinSetNew" class="input" autocomplete="new-password" />
+              <button type="button" class="pin-toggle-vis" aria-label="Show PIN" title="Show PIN">
+                <svg class="icon-eye" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+                <svg class="icon-eye-off hidden" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                  <line x1="1" y1="1" x2="23" y2="23" />
+                </svg>
+              </button>
+            </div>
           </label>
           <label class="field pin-field">
             <span class="field-label">Confirm PIN</span>
-            <input type="password" id="pinSetConfirm" class="input" autocomplete="new-password" />
+            <div class="pin-input-wrap">
+              <input type="password" id="pinSetConfirm" class="input" autocomplete="new-password" />
+              <button type="button" class="pin-toggle-vis" aria-label="Show PIN" title="Show PIN">
+                <svg class="icon-eye" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+                <svg class="icon-eye-off hidden" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                  <line x1="1" y1="1" x2="23" y2="23" />
+                </svg>
+              </button>
+            </div>
           </label>
           <p id="pinSetError" class="modal-error hidden"></p>
           <div class="modal-actions">
@@ -97,15 +133,51 @@
           <p class="modal-hint">Change your PIN or remove protection.</p>
           <label class="field pin-field">
             <span class="field-label">Current PIN</span>
-            <input type="password" id="pinManageCurrent" class="input" autocomplete="off" />
+            <div class="pin-input-wrap">
+              <input type="password" id="pinManageCurrent" class="input" autocomplete="off" />
+              <button type="button" class="pin-toggle-vis" aria-label="Show PIN" title="Show PIN">
+                <svg class="icon-eye" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+                <svg class="icon-eye-off hidden" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                  <line x1="1" y1="1" x2="23" y2="23" />
+                </svg>
+              </button>
+            </div>
           </label>
           <label class="field pin-field">
             <span class="field-label">New PIN</span>
-            <input type="password" id="pinManageNew" class="input" autocomplete="new-password" />
+            <div class="pin-input-wrap">
+              <input type="password" id="pinManageNew" class="input" autocomplete="new-password" />
+              <button type="button" class="pin-toggle-vis" aria-label="Show PIN" title="Show PIN">
+                <svg class="icon-eye" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+                <svg class="icon-eye-off hidden" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                  <line x1="1" y1="1" x2="23" y2="23" />
+                </svg>
+              </button>
+            </div>
           </label>
           <label class="field pin-field">
             <span class="field-label">Confirm new PIN</span>
-            <input type="password" id="pinManageConfirm" class="input" autocomplete="new-password" />
+            <div class="pin-input-wrap">
+              <input type="password" id="pinManageConfirm" class="input" autocomplete="new-password" />
+              <button type="button" class="pin-toggle-vis" aria-label="Show PIN" title="Show PIN">
+                <svg class="icon-eye" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+                <svg class="icon-eye-off hidden" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                  <line x1="1" y1="1" x2="23" y2="23" />
+                </svg>
+              </button>
+            </div>
           </label>
           <p id="pinManageError" class="modal-error hidden"></p>
           <div class="modal-actions pin-manage-actions">

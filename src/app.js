@@ -331,12 +331,23 @@ function wire() {
 
 let mainDataLoaded = false;
 
+function resetLockInputVisibility() {
+  const wrap = document.querySelector("#lockBackdrop .lock-pin-wrap");
+  if (!wrap) return;
+  const input = wrap.querySelector("#lockInput");
+  const btn = wrap.querySelector(".pin-toggle-vis");
+  if (!input || !btn) return;
+  input.type = "password";
+  syncPinToggleButton(btn, input);
+}
+
 function showLockScreen() {
   const bd = $("lockBackdrop");
   bd.classList.remove("hidden");
   bd.setAttribute("aria-hidden", "false");
   document.body.classList.add("app-locked");
   $("lockInput").value = "";
+  resetLockInputVisibility();
   $("lockError").classList.add("hidden");
   $("lockInput").focus();
 }
@@ -364,11 +375,33 @@ async function submitLock() {
   }
 }
 
+function syncPinToggleButton(btn, input) {
+  const masked = input.type === "password";
+  const eye = btn.querySelector(".icon-eye");
+  const eyeOff = btn.querySelector(".icon-eye-off");
+  if (eye) eye.classList.toggle("hidden", !masked);
+  if (eyeOff) eyeOff.classList.toggle("hidden", masked);
+  const label = masked ? "Show PIN" : "Hide PIN";
+  btn.setAttribute("aria-label", label);
+  btn.setAttribute("title", label);
+}
+
+function resetPinSettingsVisibility() {
+  document.querySelectorAll("#pinSettingsBackdrop .pin-input-wrap").forEach((wrap) => {
+    const input = wrap.querySelector("input");
+    const btn = wrap.querySelector(".pin-toggle-vis");
+    if (!input || !btn) return;
+    input.type = "password";
+    syncPinToggleButton(btn, input);
+  });
+}
+
 function clearPinSettingsFields() {
   ["pinSetNew", "pinSetConfirm", "pinManageCurrent", "pinManageNew", "pinManageConfirm"].forEach((id) => {
     const el = document.getElementById(id);
     if (el) el.value = "";
   });
+  resetPinSettingsVisibility();
   ["pinSetError", "pinManageError"].forEach((id) => {
     const el = document.getElementById(id);
     if (el) {
@@ -403,6 +436,17 @@ function wirePinSecurity() {
   $("lockInput").addEventListener("keydown", (e) => {
     if (e.key === "Enter") submitLock();
   });
+
+  const lockToggle = document.querySelector("#lockBackdrop .lock-pin-wrap .pin-toggle-vis");
+  if (lockToggle) {
+    lockToggle.addEventListener("click", () => {
+      const wrap = lockToggle.closest(".pin-input-wrap");
+      const input = wrap && wrap.querySelector("#lockInput");
+      if (!input) return;
+      input.type = input.type === "password" ? "text" : "password";
+      syncPinToggleButton(lockToggle, input);
+    });
+  }
 
   window.api.onSecurityOpenSettings(() => {
     if (!$("lockBackdrop").classList.contains("hidden")) return;
@@ -455,6 +499,16 @@ function wirePinSecurity() {
       return;
     }
     closePinSettingsModal();
+  });
+
+  document.querySelectorAll("#pinSettingsBackdrop .pin-toggle-vis").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const wrap = btn.closest(".pin-input-wrap");
+      const input = wrap && wrap.querySelector("input");
+      if (!input) return;
+      input.type = input.type === "password" ? "text" : "password";
+      syncPinToggleButton(btn, input);
+    });
   });
 }
 

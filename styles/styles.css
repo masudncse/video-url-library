@@ -101,9 +101,12 @@ body.app-shell .main {
   color: var(--muted);
 }
 
+.lock-modal .lock-pin-wrap {
+  margin-bottom: 0.75rem;
+}
+
 .lock-input {
   width: 100%;
-  margin-bottom: 0.75rem;
 }
 
 .lock-submit {
@@ -125,6 +128,44 @@ body.app-locked {
 
 .pin-panel .input {
   width: 100%;
+}
+
+.pin-input-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.pin-input-wrap .input {
+  padding-right: 2.65rem;
+  box-sizing: border-box;
+}
+
+.pin-toggle-vis {
+  position: absolute;
+  right: 0.3rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.pin-toggle-vis:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.pin-toggle-vis:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
 }
 
 .pin-manage-actions {
@@ -254,8 +295,9 @@ select:focus,
 
 .main {
   padding: 1.25rem;
-  max-width: 1400px;
-  margin: 0 auto;
+  width: 100%;
+  max-width: none;
+  margin: 0;
 }
 
 .empty {
