@@ -18,8 +18,8 @@
   "devDependencies": {
     "@eslint/js": "^9.17.0",
     "electron": "^33.2.0",
-    "eslint": "^9.17.0",
     "electron-builder": "^25.1.8",
+    "eslint": "^9.17.0",
     "globals": "^15.14.0",
     "nodemon": "^3.1.14"
   },
@@ -37,6 +37,7 @@
       "images/**/*"
     ],
     "win": {
+      "icon": "images/icon.ico",
       "target": [
         {
           "target": "nsis",

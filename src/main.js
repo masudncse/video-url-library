@@ -1,11 +1,15 @@
 const { app, BrowserWindow, ipcMain, clipboard, Menu, shell } = require('electron');
 const path = require('path');
 const fs = require('fs/promises');
+const fsSync = require('fs');
 const crypto = require('crypto');
 
 const rootDir = path.join(__dirname, '..');
 const viewsDir = path.join(rootDir, 'views');
-const windowIcon = path.join(rootDir, 'images', 'icon.png');
+const icoPath = path.join(rootDir, 'images', 'icon.ico');
+const pngPath = path.join(rootDir, 'images', 'icon.png');
+const windowIcon =
+  process.platform === 'win32' && fsSync.existsSync(icoPath) ? icoPath : pngPath;
 
 let mainWindow;
 let aboutWindow;
@@ -359,6 +363,9 @@ function buildMenu() {
 }
 
 app.whenReady().then(() => {
+  if (process.platform === 'win32') {
+    app.setAppUserModelId('com.managedurl.videolibrary');
+  }
   buildMenu();
   createWindow();
 });

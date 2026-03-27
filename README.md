@@ -2,6 +2,18 @@
 
 Desktop app built with Electron to save and manage video URLs with thumbnails and pagination.
 
+## Features
+
+- **Save URLs** — Add `http` / `https` links via a dialog; duplicates are rejected.
+- **Thumbnails** — YouTube links use the standard preview image; other pages use **Open Graph** / **Twitter** image tags when available, otherwise a built-in placeholder.
+- **Card grid** — Each entry shows the URL, preview, and actions (**Open** in the system browser, **Copy** to clipboard, **Remove** with confirmation).
+- **Pagination** — Choose **items per page** (8–48) and move with **Previous** / **Next**; shows page count and total URLs.
+- **Layout** — **Grid** column count (3–6); **per page** and **grid** choices are remembered (browser `localStorage`).
+- **Random** — Shuffle the current list order on screen (does not rewrite the saved file).
+- **PIN lock (optional)** — **Security → PIN settings…** to set, change, or remove a PIN (4–64 characters, stored hashed under app **userData**); unlock prompt when a PIN exists.
+- **About** — **Help → About** opens a window with app summary and MRK Solution contact links (phone, social, portfolio).
+- **Menu** — **File → Exit**, **Security**, **Help** (standard Electron application menu).
+
 ## Screenshot
 
 ![Video URL Library main window](screenshot/1.png)
@@ -10,7 +22,7 @@ Desktop app built with Electron to save and manage video URLs with thumbnails an
 
 - **Node.js** 18+ (recommended) and **npm**
 - **Windows** for the default `npm run dist` / `npm run pack` flows below (NSIS installer and unpacked `dist/win-unpacked`). **macOS** builds (`npm run dist:mac`) must run [on a Mac](https://www.electron.build/multi-platform-build). **Linux** builds (`npm run dist:linux`) run on Linux (or WSL with appropriate setup).
-- **Code signing** is optional for local packs; see [Build](#build) to enable it (`build.win.signAndEditExecutable` + `.pfx` + env vars).
+- **Code signing** is optional for local builds; enable `build.win.signAndEditExecutable`, then set **`CSC_LINK`** and **`CSC_KEY_PASSWORD`** as in [Windows code signing](#windows-code-signing-pfx-and-env-vars) before `npm run dist` or `npm run pack`.
 
 ## Install
 
@@ -47,7 +59,7 @@ video-url-library/
 ├── views/            # HTML
 ├── styles/           # CSS
 ├── storage/          # Dev database (database.txt)
-├── images/           # App icon (e.g. icon.png) for electron-builder
+├── images/           # icon.png (UI / macOS / Linux); icon.ico (Windows exe / taskbar)
 ├── dist/             # Created by pack/dist (gitignored until you build)
 ├── nodemon.json      # dev: npm run watch
 ├── package.json
@@ -81,7 +93,9 @@ Runs **electron-builder** **`--dir`** → **`dist/win-unpacked/`**.
 
 By default **`build.win.signAndEditExecutable`** is **`false`** so Windows builds work without symlink privileges (electron-builder’s signing tools extract archives that use symlinks; without [Developer Mode](https://learn.microsoft.com/en-us/windows/apps/get-started/enable-your-device-for-development) or an elevated shell, that step fails).
 
-For **Authenticode signing**, set **`signAndEditExecutable`** to **`true`** in `package.json` → `build.win`, enable **Developer Mode** (or run the build from an elevated prompt), then set [environment variables](https://www.electron.build/code-signing) **before** `npm run dist` or `npm run pack`:
+### Windows code signing (PFX and env vars)
+
+For **Authenticode signing**, set **`signAndEditExecutable`** to **`true`** in `package.json` → `build.win`, enable **Developer Mode** (or run the build from an elevated prompt), then set [environment variables](https://www.electron.build/code-signing) **in the same terminal session** before you run **`npm run dist`** or **`npm run pack`**.
 
 **cmd**
 
@@ -98,3 +112,5 @@ $env:CSC_LINK = "C:\path\to\your-codesign.pfx"
 $env:CSC_KEY_PASSWORD = "your-pfx-password"
 npm run dist
 ```
+
+Use the same `CSC_*` lines for an unpacked build; only the last command changes, for example `npm run pack`. Replace the paths and password with your real `.pfx` location and secret. More options (e.g. `CSC_NAME`) are described in the [electron-builder code signing](https://www.electron.build/code-signing) docs.
