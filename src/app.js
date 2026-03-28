@@ -14,6 +14,9 @@ const state = {
   /** When `sortOrder` is `random`, display order (canonical `entries` is unchanged). */
   shuffledItems: null,
   searchQuery: "",
+  showCardDateTime: true,
+  showCardTitle: true,
+  showCardUrl: true,
   thumbCache: new Map(),
 };
 
@@ -21,6 +24,9 @@ const LS_LIMIT = "vul:limit";
 const LS_GRID = "vul:gridCols";
 const LS_SORT = "vul:sortOrder";
 const LS_SEARCH = "vul:search";
+const LS_CARD_DATETIME = "vul:cardShowDatetime";
+const LS_CARD_TITLE = "vul:cardShowTitle";
+const LS_CARD_URL = "vul:cardShowUrl";
 const ALLOWED_LIMITS = new Set([8, 16, 24, 75, 100, 200, 300, 500]);
 const ALLOWED_GRIDS = new Set([3, 4, 5, 6, 7, 8]);
 const ALLOWED_SORTS = new Set(["asc", "desc", "random"]);
@@ -70,11 +76,41 @@ function readSavedSearch() {
   return "";
 }
 
+function readBoolLS(key, defaultVal = true) {
+  try {
+    const v = localStorage.getItem(key);
+    if (v === null) return defaultVal;
+    return v === "1" || v === "true";
+  } catch {
+    return defaultVal;
+  }
+}
+
+function writeBoolLS(key, val) {
+  try {
+    localStorage.setItem(key, val ? "1" : "0");
+  } catch {
+    /* ignore */
+  }
+}
+
+function readSavedCardView() {
+  return {
+    showDateTime: readBoolLS(LS_CARD_DATETIME, true),
+    showTitle: readBoolLS(LS_CARD_TITLE, true),
+    showUrl: readBoolLS(LS_CARD_URL, true),
+  };
+}
+
 function applyUiPrefs() {
   state.limit = readSavedLimit();
   state.gridCols = readSavedGridCols();
   state.sortOrder = readSavedSortOrder();
   state.searchQuery = readSavedSearch();
+  const cv = readSavedCardView();
+  state.showCardDateTime = cv.showDateTime;
+  state.showCardTitle = cv.showTitle;
+  state.showCardUrl = cv.showUrl;
 }
 
 function persistUiPrefs() {
@@ -83,6 +119,9 @@ function persistUiPrefs() {
     localStorage.setItem(LS_GRID, String(state.gridCols));
     localStorage.setItem(LS_SORT, state.sortOrder);
     localStorage.setItem(LS_SEARCH, state.searchQuery);
+    writeBoolLS(LS_CARD_DATETIME, state.showCardDateTime);
+    writeBoolLS(LS_CARD_TITLE, state.showCardTitle);
+    writeBoolLS(LS_CARD_URL, state.showCardUrl);
   } catch {
     /* ignore */
   }
@@ -294,19 +333,24 @@ function render() {
 
     const body = document.createElement("div");
     body.className = "card-body";
-    const timeRow = document.createElement("div");
-    timeRow.className = "card-time";
-    timeRow.textContent = formatItemTime(item.timestamp);
-    body.appendChild(timeRow);
-    if (item.title) {
+    if (state.showCardDateTime) {
+      const timeRow = document.createElement("div");
+      timeRow.className = "card-time";
+      timeRow.textContent = formatItemTime(item.timestamp);
+      body.appendChild(timeRow);
+    }
+    if (state.showCardTitle && item.title) {
       const titleRow = document.createElement("div");
       titleRow.className = "card-title";
       titleRow.textContent = item.title;
       body.appendChild(titleRow);
     }
-    const line = document.createElement("div");
-    line.className = "card-url";
-    line.textContent = url;
+    if (state.showCardUrl) {
+      const line = document.createElement("div");
+      line.className = "card-url";
+      line.textContent = url;
+      body.appendChild(line);
+    }
     const actions = document.createElement("div");
     actions.className = "card-actions";
 
@@ -339,7 +383,7 @@ function render() {
     });
 
     actions.append(btnOpen, btnCopy, btnRemove);
-    body.append(line, actions);
+    body.appendChild(actions);
     card.append(wrap, body);
     grid.appendChild(card);
 
@@ -485,6 +529,27 @@ function closeImportModal() {
   $("importBackdrop").setAttribute("aria-hidden", "true");
 }
 
+function syncPostViewModalCheckboxes() {
+  const dt = $("viewShowDatetime");
+  const ti = $("viewShowTitle");
+  const ur = $("viewShowUrl");
+  if (dt) dt.checked = state.showCardDateTime;
+  if (ti) ti.checked = state.showCardTitle;
+  if (ur) ur.checked = state.showCardUrl;
+}
+
+function openPostViewModal() {
+  if (!$("lockBackdrop").classList.contains("hidden")) return;
+  syncPostViewModalCheckboxes();
+  $("postViewBackdrop").classList.remove("hidden");
+  $("postViewBackdrop").setAttribute("aria-hidden", "false");
+}
+
+function closePostViewModal() {
+  $("postViewBackdrop").classList.add("hidden");
+  $("postViewBackdrop").setAttribute("aria-hidden", "true");
+}
+
 function wireExternalLinks() {
   document.querySelectorAll("a[data-external]").forEach((a) => {
     a.addEventListener("click", (e) => {
@@ -521,6 +586,10 @@ function wire() {
     if (e.key !== "Escape") return;
     if (!$("pinSettingsBackdrop").classList.contains("hidden")) {
       closePinSettingsModal();
+      return;
+    }
+    if (!$("postViewBackdrop").classList.contains("hidden")) {
+      closePostViewModal();
       return;
     }
     if (!$("importBackdrop").classList.contains("hidden")) {
@@ -617,6 +686,33 @@ function wire() {
   });
   $("exportBackdrop").addEventListener("click", (e) => {
     if (e.target === $("exportBackdrop")) closeExportModal();
+  });
+
+  $("postViewCloseBtn").addEventListener("click", () => closePostViewModal());
+  $("postViewBackdrop").addEventListener("click", (e) => {
+    if (e.target === $("postViewBackdrop")) closePostViewModal();
+  });
+  function applyPostViewFromForm() {
+    const dt = $("viewShowDatetime");
+    const ti = $("viewShowTitle");
+    const ur = $("viewShowUrl");
+    if (dt) state.showCardDateTime = dt.checked;
+    if (ti) state.showCardTitle = ti.checked;
+    if (ur) state.showCardUrl = ur.checked;
+  }
+  ["viewShowDatetime", "viewShowTitle", "viewShowUrl"].forEach((id) => {
+    const el = $(id);
+    if (!el) return;
+    el.addEventListener("change", () => {
+      applyPostViewFromForm();
+      persistUiPrefs();
+      render();
+    });
+  });
+
+  window.api.onOptionsOpenPostView(() => {
+    if (!$("lockBackdrop").classList.contains("hidden")) return;
+    openPostViewModal();
   });
 
   $("importBrowseBtn").addEventListener("click", async () => {

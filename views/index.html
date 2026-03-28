@@ -215,6 +215,34 @@
       </div>
     </div>
 
+    <div id="postViewBackdrop" class="modal-backdrop hidden" aria-hidden="true">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="postViewModalTitle">
+        <h2 id="postViewModalTitle" class="modal-title">Post view setting</h2>
+        <p class="modal-hint">Show or hide parts of each card. Thumbnail and actions stay visible.</p>
+        <div class="checkbox-field">
+          <label class="checkbox-label">
+            <input type="checkbox" id="viewShowDatetime" checked />
+            <span>Date &amp; time</span>
+          </label>
+        </div>
+        <div class="checkbox-field">
+          <label class="checkbox-label">
+            <input type="checkbox" id="viewShowTitle" checked />
+            <span>Title</span>
+          </label>
+        </div>
+        <div class="checkbox-field">
+          <label class="checkbox-label">
+            <input type="checkbox" id="viewShowUrl" checked />
+            <span>URL</span>
+          </label>
+        </div>
+        <div class="modal-actions">
+          <button type="button" id="postViewCloseBtn" class="btn primary">Close</button>
+        </div>
+      </div>
+    </div>
+
     <div id="exportBackdrop" class="modal-backdrop hidden" aria-hidden="true">
       <div class="modal" role="dialog" aria-modal="true" aria-labelledby="exportModalTitle">
         <h2 id="exportModalTitle" class="modal-title">Export library</h2>

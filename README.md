@@ -13,7 +13,7 @@ Desktop app built with Electron to save and manage video URLs with thumbnails an
 - **Random** — Shuffle the current list order on screen (does not rewrite the saved file).
 - **PIN lock (optional)** — **Security → PIN settings** to set, change, or remove a PIN (4–64 characters, stored hashed under app **userData**); unlock prompt when a PIN exists.
 - **About** — **Help → About** opens a window with app summary and MRK Solution contact links (phone, social, portfolio).
-- **Menu** — **File → Exit**, **Security**, **Options → Export / Import** (export writes **`data-YYYY-MM-DD.json`** into a chosen folder; import picks any JSON backup), **Help** (standard Electron application menu).
+- **Menu** — **File → Exit**, **Security**, **Options → Post view setting** (show/hide card **date & time**, **title**, **URL**), **Export** / **Import**, **Help** (standard Electron application menu).
 
 ## Screenshot
 

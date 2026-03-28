@@ -29,4 +29,7 @@ contextBridge.exposeInMainWorld('api', {
   onOptionsOpenImport: (callback) => {
     ipcRenderer.on('options-open-import', () => callback());
   },
+  onOptionsOpenPostView: (callback) => {
+    ipcRenderer.on('options-open-post-view', () => callback());
+  },
 });

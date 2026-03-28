@@ -601,6 +601,12 @@ function sendOptionsOpenImport() {
   }
 }
 
+function sendOptionsOpenPostView() {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('options-open-post-view');
+  }
+}
+
 function buildMenu() {
   /* Submenu padding and item height are drawn by the OS (Win/macOS/Linux); Electron does not expose spacing APIs. */
   const template = [
@@ -622,6 +628,11 @@ function buildMenu() {
     {
       label: 'Options',
       submenu: [
+        {
+          label: 'Setting',
+          click: () => sendOptionsOpenPostView(),
+        },
+        { type: 'separator' },
         {
           label: 'Export',
           click: () => sendOptionsOpenExport(),
