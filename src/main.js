@@ -324,12 +324,98 @@ function youtubeVideoId(url) {
   return null;
 }
 
+const META_FETCH_UA =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+
+const THUMB_CAPTURE_TIMEOUT_MS = 28000;
+const THUMB_CAPTURE_PAINT_MS = 600;
+const THUMB_CAPTURE_VIEW_W = 1280;
+const THUMB_CAPTURE_VIEW_H = 720;
+const THUMB_CAPTURE_OUT_W = 640;
+const THUMB_CAPTURE_OUT_H = 360;
+
+/** Serialize hidden-window captures so scrolling the grid does not spawn many BrowserWindows. */
+let screenshotCaptureChain = Promise.resolve();
+
+function queueScreenshotCapture(fn) {
+  const run = screenshotCaptureChain.then(() => fn());
+  screenshotCaptureChain = run.then(
+    () => {},
+    () => {}
+  );
+  return run;
+}
+
+/**
+ * Load URL in a hidden window and return a PNG data URL, or null on failure/timeout.
+ * Used when og:image / Twitter image is missing.
+ */
+function capturePageScreenshotDataUrl(pageUrl) {
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = (dataUrl) => {
+      if (settled) return;
+      settled = true;
+      resolve(dataUrl);
+    };
+
+    const win = new BrowserWindow({
+      show: false,
+      width: THUMB_CAPTURE_VIEW_W,
+      height: THUMB_CAPTURE_VIEW_H,
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true,
+        partition: 'persist:thumb-screenshot',
+      },
+    });
+
+    const failTimer = setTimeout(() => {
+      if (!win.isDestroyed()) win.destroy();
+      finish(null);
+    }, THUMB_CAPTURE_TIMEOUT_MS);
+
+    const cleanupWin = () => {
+      clearTimeout(failTimer);
+      if (!win.isDestroyed()) win.destroy();
+    };
+
+    win.webContents.setUserAgent(META_FETCH_UA);
+
+    win.webContents.once('did-fail-load', (_e, _code, _desc, _failedUrl, isMainFrame) => {
+      if (!isMainFrame || settled) return;
+      cleanupWin();
+      finish(null);
+    });
+
+    win.webContents.once('did-finish-load', async () => {
+      if (settled) return;
+      try {
+        await new Promise((r) => setTimeout(r, THUMB_CAPTURE_PAINT_MS));
+        if (settled || win.isDestroyed()) return;
+        const image = await win.webContents.capturePage();
+        const resized = image.resize({ width: THUMB_CAPTURE_OUT_W, height: THUMB_CAPTURE_OUT_H });
+        const png = resized.toPNG();
+        cleanupWin();
+        finish(`data:image/png;base64,${png.toString('base64')}`);
+      } catch {
+        cleanupWin();
+        finish(null);
+      }
+    });
+
+    win.loadURL(pageUrl).catch(() => {
+      cleanupWin();
+      finish(null);
+    });
+  });
+}
+
 async function fetchHtmlForMeta(pageUrl) {
   const res = await fetch(pageUrl, {
     redirect: 'follow',
     headers: {
-      'User-Agent':
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'User-Agent': META_FETCH_UA,
       Accept: 'text/html,application/xhtml+xml',
     },
   });
@@ -486,6 +572,12 @@ ipcMain.handle('thumbnail-for-url', async (_e, url) => {
   try {
     const og = await fetchOgImage(trimmed);
     if (og) return { type: 'url', href: og };
+  } catch {
+    /* ignore */
+  }
+  try {
+    const shot = await queueScreenshotCapture(() => capturePageScreenshotDataUrl(trimmed));
+    if (shot) return { type: 'url', href: shot };
   } catch {
     /* ignore */
   }
