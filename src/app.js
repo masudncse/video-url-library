@@ -5,7 +5,7 @@ const PLACEHOLDER_SVG =
   );
 
 const state = {
-  /** @type {{ id: string, timestamp: number, url: string }[]} */
+  /** @type {{ id: string, timestamp: number, url: string, title: string }[]} */
   entries: [],
   page: 1,
   limit: 16,
@@ -13,12 +13,14 @@ const state = {
   sortOrder: "asc",
   /** When `sortOrder` is `random`, display order (canonical `entries` is unchanged). */
   shuffledItems: null,
+  searchQuery: "",
   thumbCache: new Map(),
 };
 
 const LS_LIMIT = "vul:limit";
 const LS_GRID = "vul:gridCols";
 const LS_SORT = "vul:sortOrder";
+const LS_SEARCH = "vul:search";
 const ALLOWED_LIMITS = new Set([8, 16, 24, 75, 100, 200, 300, 500]);
 const ALLOWED_GRIDS = new Set([3, 4, 5, 6, 7, 8]);
 const ALLOWED_SORTS = new Set(["asc", "desc", "random"]);
@@ -58,10 +60,21 @@ function readSavedSortOrder() {
   return "asc";
 }
 
+function readSavedSearch() {
+  try {
+    const v = localStorage.getItem(LS_SEARCH) || "";
+    return v.length > 500 ? v.slice(0, 500) : v;
+  } catch {
+    /* ignore */
+  }
+  return "";
+}
+
 function applyUiPrefs() {
   state.limit = readSavedLimit();
   state.gridCols = readSavedGridCols();
   state.sortOrder = readSavedSortOrder();
+  state.searchQuery = readSavedSearch();
 }
 
 function persistUiPrefs() {
@@ -69,9 +82,20 @@ function persistUiPrefs() {
     localStorage.setItem(LS_LIMIT, String(state.limit));
     localStorage.setItem(LS_GRID, String(state.gridCols));
     localStorage.setItem(LS_SORT, state.sortOrder);
+    localStorage.setItem(LS_SEARCH, state.searchQuery);
   } catch {
     /* ignore */
   }
+}
+
+function getFilteredEntries() {
+  const q = state.searchQuery.trim().toLowerCase();
+  if (!q) return state.entries;
+  return state.entries.filter((item) => {
+    const url = (item.url || "").toLowerCase();
+    const title = (item.title || "").toLowerCase();
+    return url.includes(q) || title.includes(q);
+  });
 }
 
 function openUrlInBrowser(url) {
@@ -102,13 +126,16 @@ function normalizeDbRows(raw) {
         typeof row.timestamp === "number" && Number.isFinite(row.timestamp)
           ? row.timestamp
           : 0;
+      const title =
+        typeof row.title === "string" ? row.title.trim().slice(0, 500) : "";
       out.push({
         id: typeof row.id === "string" ? row.id : "",
         timestamp: ts,
         url,
+        title,
       });
     } else if (typeof row === "string" && row.trim()) {
-      out.push({ id: "", timestamp: 0, url: row.trim() });
+      out.push({ id: "", timestamp: 0, url: row.trim(), title: "" });
     }
   }
   return out;
@@ -140,7 +167,7 @@ function syncOrderSelect() {
 }
 
 function getDisplayItems() {
-  const u = state.entries;
+  const u = getFilteredEntries();
   if (u.length === 0) return [];
 
   if (state.sortOrder === "random") {
@@ -177,7 +204,9 @@ async function loadUrls() {
   const raw = await window.api.dbRead();
   state.entries = normalizeDbRows(raw);
   if (state.sortOrder === "random") {
-    state.shuffledItems = shuffleCopy(state.entries);
+    state.shuffledItems = shuffleCopy(getFilteredEntries());
+  } else {
+    state.shuffledItems = null;
   }
   const max = totalPages();
   if (state.page > max) state.page = max;
@@ -187,12 +216,14 @@ async function loadUrls() {
 function render() {
   syncOrderSelect();
   const empty = $("emptyState");
+  const emptyMsg = $("emptyStateMsg");
   const grid = $("grid");
   const pager = $("pager");
   const pageInfo = $("pageInfo");
   const btnPrev = $("btnPrev");
   const btnNext = $("btnNext");
   const btnRandom = $("btnRandom");
+  const filtered = getFilteredEntries();
   if (btnRandom) {
     btnRandom.disabled = state.entries.length === 0;
   }
@@ -201,6 +232,19 @@ function render() {
 
   if (state.entries.length === 0) {
     if (btnRandom) btnRandom.disabled = true;
+    if (emptyMsg) {
+      emptyMsg.innerHTML = "No URLs yet. Click <strong>Add URL</strong> to save your first link.";
+    }
+    empty.classList.remove("hidden");
+    grid.innerHTML = "";
+    pager.classList.add("hidden");
+    return;
+  }
+
+  if (filtered.length === 0) {
+    if (emptyMsg) {
+      emptyMsg.innerHTML = "No items match your search. Try another <strong>title</strong> or <strong>URL</strong> term.";
+    }
     empty.classList.remove("hidden");
     grid.innerHTML = "";
     pager.classList.add("hidden");
@@ -212,7 +256,10 @@ function render() {
 
   const pages = totalPages();
   const slice = currentSlice();
-  pageInfo.textContent = `Page ${state.page} of ${pages} · ${state.entries.length} total`;
+  const q = state.searchQuery.trim();
+  pageInfo.textContent = q
+    ? `Page ${state.page} of ${pages} · ${filtered.length} matching (${state.entries.length} total)`
+    : `Page ${state.page} of ${pages} · ${state.entries.length} total`;
   btnPrev.disabled = state.page <= 1;
   btnNext.disabled = state.page >= pages;
 
@@ -239,7 +286,7 @@ function render() {
     });
     const img = document.createElement("img");
     img.className = "card-thumb";
-    img.alt = "";
+    img.alt = item.title || "";
     img.loading = "lazy";
     img.src = PLACEHOLDER_SVG;
     img.draggable = false;
@@ -250,6 +297,13 @@ function render() {
     const timeRow = document.createElement("div");
     timeRow.className = "card-time";
     timeRow.textContent = formatItemTime(item.timestamp);
+    body.appendChild(timeRow);
+    if (item.title) {
+      const titleRow = document.createElement("div");
+      titleRow.className = "card-title";
+      titleRow.textContent = item.title;
+      body.appendChild(titleRow);
+    }
     const line = document.createElement("div");
     line.className = "card-url";
     line.textContent = url;
@@ -285,7 +339,7 @@ function render() {
     });
 
     actions.append(btnOpen, btnCopy, btnRemove);
-    body.append(timeRow, line, actions);
+    body.append(line, actions);
     card.append(wrap, body);
     grid.appendChild(card);
 
@@ -385,9 +439,10 @@ async function saveModal() {
 }
 
 function shuffleLibraryOrder() {
-  if (state.entries.length === 0) return;
+  const filtered = getFilteredEntries();
+  if (filtered.length === 0) return;
   state.sortOrder = "random";
-  state.shuffledItems = shuffleCopy(state.entries);
+  state.shuffledItems = shuffleCopy(filtered);
   state.page = 1;
   persistUiPrefs();
   render();
@@ -479,6 +534,18 @@ function wire() {
     if (!$("lockBackdrop").classList.contains("hidden")) return;
     if (!$("modalBackdrop").classList.contains("hidden")) closeModal();
   });
+
+  const searchEl = $("searchInput");
+  if (searchEl) {
+    searchEl.value = state.searchQuery;
+    searchEl.addEventListener("input", () => {
+      state.searchQuery = searchEl.value;
+      state.page = 1;
+      state.shuffledItems = null;
+      persistUiPrefs();
+      render();
+    });
+  }
 
   $("limitSelect").value = String(state.limit);
   $("limitSelect").addEventListener("change", () => {

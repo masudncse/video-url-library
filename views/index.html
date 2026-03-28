@@ -42,6 +42,18 @@
     <header class="toolbar">
       <h1 class="title">Video URL Library</h1>
       <div class="toolbar-actions">
+        <label class="field field-search">
+          <span class="field-label">Search</span>
+          <input
+            type="search"
+            id="searchInput"
+            class="input search-input"
+            placeholder="Title or URL"
+            autocomplete="off"
+            spellcheck="false"
+            aria-label="Search by title or URL"
+          />
+        </label>
         <label class="field">
           <span class="field-label">Per page</span>
           <select id="limitSelect" aria-label="Items per page">
@@ -81,7 +93,7 @@
 
     <main class="main">
       <div id="emptyState" class="empty hidden" role="status">
-        <p>No URLs yet. Click <strong>Add URL</strong> to save your first link.</p>
+        <p id="emptyStateMsg">No URLs yet. Click <strong>Add URL</strong> to save your first link.</p>
       </div>
       <div id="grid" class="card-grid" style="--cols: 4"></div>
       <nav id="pager" class="pager hidden" aria-label="Pagination">

@@ -6,9 +6,10 @@ Desktop app built with Electron to save and manage video URLs with thumbnails an
 
 - **Save URLs** — Add `http` / `https` links via a dialog; duplicates are rejected.
 - **Thumbnails** — YouTube links use the standard preview image; other pages use **Open Graph** / **Twitter** image tags when available, otherwise a built-in placeholder.
-- **Card grid** — Each entry shows **when it was added** (from `timestamp`), the URL, preview thumbnail, and actions (**Open**, **Copy**, **Remove** with confirmation).
+- **Card grid** — Each entry shows **when it was added**, **title** (when saved), the URL, preview thumbnail, and actions (**Open**, **Copy**, **Remove** with confirmation).
 - **Pagination** — Choose **items per page** (8–500, fixed presets) and move with **Previous** / **Next**; shows page count and total URLs.
 - **Layout** — **Grid** column count (3–8); **per page** and **grid** choices are remembered (browser `localStorage`).
+- **Search** — Filter the list by **title** or **URL** (case-insensitive substring); search text is remembered in `localStorage`.
 - **Random** — Shuffle the current list order on screen (does not rewrite the saved file).
 - **PIN lock (optional)** — **Security → PIN settings** to set, change, or remove a PIN (4–64 characters, stored hashed under app **userData**); unlock prompt when a PIN exists.
 - **About** — **Help → About** opens a window with app summary and MRK Solution contact links (phone, social, portfolio).
@@ -43,7 +44,7 @@ npm run watch
 
 Uses [nodemon](https://nodemon.io/) with `nodemon.json`. Or double-click **`start.bat`** for a normal start (`npm start` with Chrome remote debugging on port **8069**).
 
-Development data is stored in **`storage/data.json`**: an array of `{ "id": "<6-char random>", "timestamp": <ms>, "url": "<https://…>" }` (`id` is `a`–`z`, `A`–`Z`, `0`–`9`; plain URLs, no Base64). On first run, a legacy **`database.json`** or **`database.txt`** in the same folder is imported once, then removed or left on disk. Packaged builds use **userData** for **`data.json`**.
+Development data is stored in **`storage/data.json`**: an array of `{ "id": "<6-char>", "timestamp": <ms>, "url": "<https://…>", "title": "<page title or empty>" }`. New URLs get **`title`** from the page (`og:title`, `twitter:title`, or `<title>`) when possible. On first run, legacy **`database.json`** or **`database.txt`** is imported once. Packaged builds use **userData** for **`data.json`**.
 
 ### PIN lock
 

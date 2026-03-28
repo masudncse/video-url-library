@@ -159,19 +159,37 @@ function isValidEntryId(s) {
   return typeof s === 'string' && /^[A-Za-z0-9]{6}$/.test(s);
 }
 
+const MAX_TITLE_LEN = 500;
+
+function normalizeStoredTitle(s) {
+  if (typeof s !== 'string') return '';
+  return s.trim().slice(0, MAX_TITLE_LEN);
+}
+
+function decodeBasicHtmlEntities(s) {
+  return String(s)
+    .replace(/&amp;/gi, '&')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&nbsp;/gi, ' ');
+}
+
 function parseDbEntryFields(row) {
   if (!row || typeof row.url !== 'string') return null;
   const url = row.url.trim();
   if (!isHttpUrl(url)) return null;
+  const title = normalizeStoredTitle(row.title);
   let ts = row.timestamp;
   if (typeof ts === 'number' && Number.isFinite(ts)) {
-    return { timestamp: Math.trunc(ts), url };
+    return { timestamp: Math.trunc(ts), url, title };
   }
   if (typeof ts === 'string') {
     const parsed = Date.parse(ts);
-    if (!Number.isNaN(parsed)) return { timestamp: parsed, url };
+    if (!Number.isNaN(parsed)) return { timestamp: parsed, url, title };
   }
-  return { timestamp: Date.now(), url };
+  return { timestamp: Date.now(), url, title };
 }
 
 function sortEntriesByTimestamp(entries) {
@@ -201,7 +219,7 @@ function entriesFromParsedArray(data) {
     let id =
       isValidEntryId(row.id) && !usedIds.has(row.id) ? row.id : newUniqueId(usedIds);
     if (!usedIds.has(id)) usedIds.add(id);
-    out.push({ id, timestamp: parsed.timestamp, url: parsed.url });
+    out.push({ id, timestamp: parsed.timestamp, url: parsed.url, title: parsed.title || '' });
   }
   return sortEntriesByTimestamp(out);
 }
@@ -249,6 +267,7 @@ async function migrateLegacyTxtToJson() {
     id: newUniqueId(usedIds),
     timestamp: base + i,
     url,
+    title: '',
   }));
   const jsonPath = getDbPath();
   await ensureParentDir(jsonPath);
@@ -305,7 +324,7 @@ function youtubeVideoId(url) {
   return null;
 }
 
-async function fetchOgImage(pageUrl) {
+async function fetchHtmlForMeta(pageUrl) {
   const res = await fetch(pageUrl, {
     redirect: 'follow',
     headers: {
@@ -315,7 +334,12 @@ async function fetchOgImage(pageUrl) {
     },
   });
   if (!res.ok) return null;
-  const html = await res.text();
+  return res.text();
+}
+
+async function fetchOgImage(pageUrl) {
+  const html = await fetchHtmlForMeta(pageUrl);
+  if (!html) return null;
   const m =
     html.match(/property=["']og:image["']\s+content=["']([^"']+)["']/i) ||
     html.match(/content=["']([^"']+)["']\s+property=["']og:image["']/i) ||
@@ -323,9 +347,38 @@ async function fetchOgImage(pageUrl) {
   return m ? m[1].trim() : null;
 }
 
+async function fetchPageTitle(pageUrl) {
+  try {
+    const html = await fetchHtmlForMeta(pageUrl);
+    if (!html) return '';
+    const og =
+      html.match(/property=["']og:title["']\s+content=["']([^"']*)["']/i) ||
+      html.match(/content=["']([^"']*)["']\s+property=["']og:title["']/i);
+    if (og && og[1]) {
+      return normalizeStoredTitle(decodeBasicHtmlEntities(og[1].trim()));
+    }
+    const tw = html.match(/name=["']twitter:title["']\s+content=["']([^"']*)["']/i);
+    if (tw && tw[1]) {
+      return normalizeStoredTitle(decodeBasicHtmlEntities(tw[1].trim()));
+    }
+    const titleM = html.match(/<title[^>]*>([^<]*)<\/title>/is);
+    if (titleM && titleM[1]) {
+      return normalizeStoredTitle(decodeBasicHtmlEntities(titleM[1].replace(/\s+/g, ' ').trim()));
+    }
+  } catch {
+    /* ignore */
+  }
+  return '';
+}
+
 ipcMain.handle('db-read', async () => {
   const entries = await readDbEntries();
-  return entries.map((e) => ({ id: e.id, timestamp: e.timestamp, url: e.url }));
+  return entries.map((e) => ({
+    id: e.id,
+    timestamp: e.timestamp,
+    url: e.url,
+    title: typeof e.title === 'string' ? e.title : '',
+  }));
 });
 
 ipcMain.handle('db-add', async (_e, url) => {
@@ -338,10 +391,12 @@ ipcMain.handle('db-add', async (_e, url) => {
     return { ok: false, error: 'This URL is already in the list.' };
   }
   const usedIds = new Set(entries.map((e) => e.id));
+  const title = await fetchPageTitle(trimmed);
   entries.push({
     id: newUniqueId(usedIds),
     timestamp: Date.now(),
     url: trimmed,
+    title,
   });
   await writeDbEntries(entries);
   return { ok: true };
