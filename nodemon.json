@@ -1,7 +1,7 @@
 {
   "watch": ["src", "views", "styles"],
   "ext": "js,html,css",
-  "ignore": ["node_modules", "dist", "storage", "screenshot"],
+  "ignore": ["node_modules", "dist", "storage", "screenshots"],
   "delay": 1000,
   "exec": "electron ."
 }

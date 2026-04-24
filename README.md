@@ -10,7 +10,7 @@ A **free, open-source** desktop app for Windows, macOS, and Linux. Save video an
 
 | Main library (grid, search, controls) | Open link (in-app window) | Add URL dialog |
 |:---:|:---:|:---:|
-| ![Main grid](screenshot/01-main-grid.png) | ![Open in window](screenshot/02-open-in-window.png) | ![Add URL](screenshot/03-add-url-dialog.png) |
+| ![Main grid](screenshots/01-main-grid.png) | ![Open in window](screenshots/02-open-in-window.png) | ![Add URL](screenshots/03-add-url-dialog.png) |
 
 ---
 
@@ -148,7 +148,7 @@ If there is no release yet, build locally with `npm run dist` and install from `
 
 ```
 video-url-library/
-├── screenshot/       # README screenshots
+├── screenshots/       # README screenshots
 ├── src/              # main.js, preload.js, app.js, about.js
 ├── views/            # index.html, about.html
 ├── styles/           # styles.css
