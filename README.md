@@ -138,11 +138,11 @@ npm run dist:linux
 
 **Direct download (NSIS installer, v1.0.0):**
 
-[Video URL Library Setup 1.0.0.exe](https://github.com/masudncse/video-url-library/raw/main/downloads/Video%20URL%20Library%20Setup%201.0.0.exe)
+[Video_URL_Library_Setup_1.0.0.exe](https://github.com/masudncse/video-url-library/raw/main/downloads/Video_URL_Library_Setup_1.0.0.exe)
 
 Same URL as plain link (right-click → save, or paste in browser):
 
-`https://github.com/masudncse/video-url-library/raw/main/downloads/Video%20URL%20Library%20Setup%201.0.0.exe`
+`https://github.com/masudncse/video-url-library/raw/main/downloads/Video_URL_Library_Setup_1.0.0.exe`
 
 You can also use **[GitHub Releases (latest)](https://github.com/masudncse/video-url-library/releases/latest)** when installers are attached there.
 

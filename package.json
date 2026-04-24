@@ -37,6 +37,7 @@
       "images/**/*"
     ],
     "win": {
+      "artifactName": "Video_URL_Library_Setup_${version}.${ext}",
       "icon": "images/icon.ico",
       "target": [
         {
