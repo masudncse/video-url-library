@@ -2,7 +2,10 @@
 
 A **free, open-source** desktop app for Windows, macOS, and Linux. Save video and web URLs in a local library with **automatic thumbnails and titles**, search and sort, a **customizable card grid**, optional **PIN lock**, and **export / import** of your data.
 
+**Repository:** [github.com/masudncse/video-url-library](https://github.com/masudncse/video-url-library)
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![GitHub Repo](https://img.shields.io/badge/GitHub-video--url--library-181717?logo=github)](https://github.com/masudncse/video-url-library)
 
 ---
 
@@ -85,12 +88,10 @@ Node **built-in** modules used in the main process include `crypto`, `fs`, `http
 ## Install
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/video-url-library.git
+git clone https://github.com/masudncse/video-url-library.git
 cd video-url-library
 npm install
 ```
-
-Replace `YOUR_USERNAME` with your GitHub username after the repository is public.
 
 ---
 
@@ -135,12 +136,12 @@ npm run dist:linux
 
 ## Download (pre-built Windows `.exe`)
 
-After you publish the project and attach build artifacts to **GitHub Releases**:
+When a build is published on **GitHub Releases**:
 
-1. Open **Releases**: `https://github.com/YOUR_USERNAME/video-url-library/releases/latest`
-2. Download the **Windows NSIS installer** (for example `Video URL Library Setup 1.0.0.exe` — the exact filename includes your version from `package.json`).
+1. Open **[Releases (latest)](https://github.com/masudncse/video-url-library/releases/latest)** for [masudncse/video-url-library](https://github.com/masudncse/video-url-library).
+2. Download the **Windows NSIS installer** (for example `Video URL Library Setup 1.0.0.exe` — the exact filename matches the version in `package.json`).
 
-If there is no release yet, build locally with `npm run dist` and install from `dist/`, or use the unpacked folder from `npm run pack`.
+If no release is available yet, build locally with `npm run dist` and install from `dist/`, or use the unpacked folder from `npm run pack`.
 
 ---
 
