@@ -136,12 +136,17 @@ npm run dist:linux
 
 ## Download (pre-built Windows `.exe`)
 
-When a build is published on **GitHub Releases**:
+**Direct download (NSIS installer, v1.0.0):**
 
-1. Open **[Releases (latest)](https://github.com/masudncse/video-url-library/releases/latest)** for [masudncse/video-url-library](https://github.com/masudncse/video-url-library).
-2. Download the **Windows NSIS installer** (for example `Video URL Library Setup 1.0.0.exe` — the exact filename matches the version in `package.json`).
+[Video URL Library Setup 1.0.0.exe](https://github.com/masudncse/video-url-library/raw/main/exe/Video%20URL%20Library%20Setup%201.0.0.exe)
 
-If no release is available yet, build locally with `npm run dist` and install from `dist/`, or use the unpacked folder from `npm run pack`.
+Same URL as plain link (right-click → save, or paste in browser):
+
+`https://github.com/masudncse/video-url-library/raw/main/exe/Video%20URL%20Library%20Setup%201.0.0.exe`
+
+You can also use **[GitHub Releases (latest)](https://github.com/masudncse/video-url-library/releases/latest)** when installers are attached there.
+
+To build this file yourself: `npm run dist` (output in `dist/`), or copy into `exe/` after building. For a portable folder: `npm run pack` → `dist/win-unpacked/`.
 
 ---
 
@@ -149,6 +154,7 @@ If no release is available yet, build locally with `npm run dist` and install fr
 
 ```
 video-url-library/
+├── exe/               # Pre-built Windows NSIS installer (optional)
 ├── screenshots/       # README screenshots
 ├── src/              # main.js, preload.js, app.js, about.js
 ├── views/            # index.html, about.html
